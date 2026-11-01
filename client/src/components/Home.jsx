@@ -47,9 +47,12 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#ffffff] flex flex-col justify-between py-10 px-4 sm:px-6">
+    <div
+      className="min-h-[calc(100vh-4rem)] bg-[#dceff5] bg-cover bg-center bg-no-repeat flex flex-col justify-between py-8 px-4 sm:px-6"
+      style={{ backgroundImage: "url('/hcmut-campus-background.png')" }}
+    >
       {/* KHỐI TRUNG TÂM CHUẨN MYBK (mybk.hcmut.edu.vn) */}
-      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center">
+      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center rounded-2xl bg-white/90 p-4 sm:p-6 shadow-xl border border-white/70 backdrop-blur-sm">
         {/* Logo 3D Khối Lập Phương Bách Khoa TP.HCM */}
         <div className="mb-6 flex flex-col items-center text-center">
           <BKLogo className="w-24 h-24 mb-3 drop-shadow-sm" />
@@ -194,7 +197,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
       </div>
 
       {/* 3 THẺ GIỚI THIỆU TÍNH NĂNG Ở ĐÁY (CHUẨN LMS THÔNG BÁO) */}
-      <div className="max-w-4xl mx-auto w-full mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left border-t border-gray-200 pt-6">
+      <div className="max-w-4xl mx-auto w-full mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
         <div className="p-3.5 rounded-xl border border-gray-200 bg-[#f8f9fa] flex items-center gap-3">
           <Monitor className="w-5 h-5 text-[#0275b8] shrink-0" />
           <div className="text-xs">
