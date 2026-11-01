@@ -52,7 +52,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
       style={{ backgroundImage: "url('/hcmut-campus-background.png')" }}
     >
       {/* KHỐI TRUNG TÂM CHUẨN MYBK (mybk.hcmut.edu.vn) */}
-      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center rounded-2xl bg-white/35 p-4 sm:p-6 shadow-xl border border-white/50 backdrop-blur-md">
+      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center rounded-2xl bg-white/35 p-4 sm:p-6 shadow-xl border border-white/50 backdrop-blur-xl">
         {/* Logo 3D Khối Lập Phương Bách Khoa TP.HCM */}
         <div className="mb-6 flex flex-col items-center text-center">
           <BKLogo className="w-24 h-24 mb-3 drop-shadow-sm" />
