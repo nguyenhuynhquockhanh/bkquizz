@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Check, X, Flame, Zap } from "lucide-react";
 import { sounds } from "../services/sound";
+import BKLogo from "./BKLogo";
 
 export default function PlayerScreen({ playerData, socket, onLeave }) {
   const [playerState, setPlayerState] = useState("LOBBY");
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
   const [currentQuestionType, setCurrentQuestionType] = useState("MULTIPLE_CHOICE");
+  const [questionTitle, setQuestionTitle] = useState("");
+  const [questionImageUrl, setQuestionImageUrl] = useState("");
+  const [questionOptions, setQuestionOptions] = useState([]);
+  const [showQuestionsOnPlayer, setShowQuestionsOnPlayer] = useState(
+    playerData?.showQuestionsOnPlayerScreen !== false
+  );
   const [remainingTime, setRemainingTime] = useState(15);
   const [powerUps, setPowerUps] = useState(playerData?.player?.powerUps || { fiftyFifty: 1, doublePoints: 1 });
   const [eliminatedOptions, setEliminatedOptions] = useState([]);
@@ -14,25 +21,43 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
   const [totalScore, setTotalScore] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
 
-  const EMOJIS = ["❤️", "😂", "🔥", "👏", "⚡"];
+  const EMOJIS = ["❤️", "😂", "🔥", "👏", "⚡", "🎓"];
 
   useEffect(() => {
-    socket.on("question_intro", ({ questionNumber, questionType }) => {
+    socket.on("question_intro", ({ questionNumber, questionType, questionTitle: qTitle, showQuestionsOnPlayer: sQ }) => {
       setPlayerState("INTRO");
       setCurrentQuestionNumber(questionNumber);
       setCurrentQuestionType(questionType || "MULTIPLE_CHOICE");
+      if (sQ !== undefined) setShowQuestionsOnPlayer(sQ);
+      if (qTitle) setQuestionTitle(qTitle);
       setEliminatedOptions([]);
       setUseDoublePointsThisRound(false);
       sounds.playPop();
     });
 
-    socket.on("question_start_player", ({ questionNumber, questionType, timeLimit, powerUps: pUps }) => {
-      setPlayerState("PLAYING");
-      setCurrentQuestionNumber(questionNumber);
-      setCurrentQuestionType(questionType || "MULTIPLE_CHOICE");
-      setRemainingTime(timeLimit);
-      if (pUps) setPowerUps(pUps);
-    });
+    socket.on(
+      "question_start_player",
+      ({
+        questionNumber,
+        questionType,
+        timeLimit,
+        powerUps: pUps,
+        showQuestionsOnPlayer: sQ,
+        questionTitle: qTitle,
+        imageUrl: imgUrl,
+        options: qOpts
+      }) => {
+        setPlayerState("PLAYING");
+        setCurrentQuestionNumber(questionNumber);
+        setCurrentQuestionType(questionType || "MULTIPLE_CHOICE");
+        setRemainingTime(timeLimit);
+        if (pUps) setPowerUps(pUps);
+        if (sQ !== undefined) setShowQuestionsOnPlayer(sQ);
+        if (qTitle) setQuestionTitle(qTitle);
+        setQuestionImageUrl(imgUrl || "");
+        if (qOpts) setQuestionOptions(qOpts);
+      }
+    );
 
     socket.on("timer_tick", ({ remaining }) => {
       setRemainingTime(remaining);
@@ -59,7 +84,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
     socket.on("leaderboard_update", () => setPlayerState("WAITING_NEXT"));
     socket.on("game_over", () => setPlayerState("GAME_OVER"));
     socket.on("room_closed", ({ message }) => {
-      alert(message || "Phòng chơi đã kết thúc!");
+      alert(message || "Phòng thi đã kết thúc!");
       onLeave();
     });
 
@@ -103,10 +128,10 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
   };
 
   const kahootOptions = [
-    { id: 0, theme: "kahoot-card-red", icon: "▲" },
-    { id: 1, theme: "kahoot-card-blue", icon: "◆" },
-    { id: 2, theme: "kahoot-card-yellow", icon: "●" },
-    { id: 3, theme: "kahoot-card-green", icon: "■" }
+    { id: 0, theme: "kahoot-card-red", icon: "▲", fallbackText: "Lựa chọn 1" },
+    { id: 1, theme: "kahoot-card-blue", icon: "◆", fallbackText: "Lựa chọn 2" },
+    { id: 2, theme: "kahoot-card-yellow", icon: "●", fallbackText: "Lựa chọn 3" },
+    { id: 3, theme: "kahoot-card-green", icon: "■", fallbackText: "Lựa chọn 4" }
   ];
 
   const trueFalseOptions = [
@@ -117,23 +142,26 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
   const isTrueFalse = currentQuestionType === "TRUE_FALSE";
 
   return (
-    <div className="h-screen w-screen flex flex-col justify-between select-none overflow-hidden bg-[#46178f]">
-      {/* Top Header mỏng */}
-      <div className="bg-[#381072] border-b-2 border-[#2b085a] px-4 py-2.5 flex items-center justify-between shadow-sm">
+    <div className="h-screen w-screen flex flex-col justify-between select-none overflow-hidden bg-[#002855]">
+      {/* Top Header mỏng chuẩn BK */}
+      <div className="bg-[#001c3d] border-b-2 border-[#00132b] px-4 py-2.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-2xl">{playerData?.player?.avatar}</span>
-          <span className="font-black text-white text-base">{playerData?.player?.nickname}</span>
+          <div className="flex flex-col text-left leading-tight">
+            <span className="font-black text-white text-sm sm:text-base">{playerData?.player?.nickname}</span>
+            <span className="text-[10px] text-blue-200 font-bold uppercase">BKQuiz Thí sinh</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
           {currentStreak >= 2 && (
-            <div className="flex items-center gap-1 text-xs font-black text-[#ffa602] bg-black/30 px-2 py-1 rounded">
+            <div className="flex items-center gap-1 text-xs font-black text-[#ffa602] bg-black/40 px-2 py-1 rounded-md border border-[#ffa602]/30">
               <Flame className="w-3.5 h-3.5 fill-[#ffa602]" />
               <span>{currentStreak}</span>
             </div>
           )}
-          <div className="bg-black/30 px-3 py-1 rounded text-white font-black text-sm">
-            {totalScore} <span className="text-xs text-gray-300 font-bold">pts</span>
+          <div className="bg-black/40 px-3 py-1 rounded-md text-white font-black text-sm border border-white/10">
+            {totalScore} <span className="text-xs text-blue-200 font-bold">pts</span>
           </div>
         </div>
       </div>
@@ -141,39 +169,52 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
       {/* 1. MÀN HÌNH LOBBY */}
       {playerState === "LOBBY" && (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
-          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <BKLogo className="w-8 h-8" />
+            <span className="text-xs font-black uppercase text-blue-200 tracking-wider">
+              BKQuiz • ĐH Bách Khoa TP.HCM
+            </span>
+          </div>
+
+          <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-4xl shadow-2xl ring-4 ring-[#fdb913]">
             {playerData?.player?.avatar}
           </div>
 
           <h2 className="text-3xl font-black text-white leading-tight">
-            Bạn đã vào phòng!
+            Bạn đã sẵn sàng!
           </h2>
-          <p className="text-purple-200 text-sm max-w-xs font-bold">
-            Hãy nhìn lên bảng chiếu của Host và chờ trận đấu bắt đầu.
+          <p className="text-blue-200 text-sm max-w-xs font-bold">
+            Hãy theo dõi màn hình của Host hoặc chờ câu hỏi bắt đầu trên máy.
           </p>
 
-          <div className="bg-black/25 px-4 py-2 rounded font-black text-white text-xs">
-            MÃ PIN: <span className="text-[#ffa602] font-black">{playerData?.pin}</span>
+          <div className="bg-black/30 px-5 py-2.5 rounded-lg font-black text-white text-xs border border-white/10">
+            MÃ PIN: <span className="text-[#fdb913] font-black text-sm">{playerData?.pin}</span>
           </div>
         </div>
       )}
 
       {/* 2. MÀN HÌNH CHUẨN BỊ (INTRO) */}
       {playerState === "INTRO" && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#381072]">
-          <span className="text-xs font-black uppercase text-purple-300 tracking-wider">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#001d40]">
+          <span className="text-xs font-black uppercase text-blue-300 tracking-wider">
             CÂU HỎI {currentQuestionNumber} ({isTrueFalse ? "ĐÚNG / SAI" : "4 LỰA CHỌN"})
           </span>
-          <h2 className="text-4xl font-black text-white">Sẵn sàng!</h2>
+          {showQuestionsOnPlayer && questionTitle && (
+            <div className="max-w-md bg-white text-[#002855] p-5 rounded-xl font-black text-lg sm:text-xl shadow-lg border-b-4 border-gray-300">
+              {questionTitle}
+            </div>
+          )}
+          <h2 className="text-4xl font-black text-[#fdb913] animate-pulse">Sẵn sàng!</h2>
         </div>
       )}
 
-      {/* 3. MÀN HÌNH CHỌN ĐÁP ÁN (2 Khối nếu Đúng/Sai, 4 Khối nếu Trắc nghiệm) */}
+      {/* 3. MÀN HÌNH CHỌN ĐÁP ÁN (HỖ TRỢ HIỂN THỊ CÂU HỎI TRỰC TIẾP TRÊN MÁY NGƯỜI CHƠI) */}
       {playerState === "PLAYING" && (
-        <div className="flex-1 flex flex-col justify-between p-3 gap-3">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-black text-white/80">
-              Đồng hồ: <span className="text-[#ffa602] font-black text-sm">{remainingTime}s</span>
+        <div className="flex-1 flex flex-col justify-between p-3 gap-2 sm:gap-3 overflow-y-auto">
+          {/* Thanh trạng thái thời gian & trợ giúp */}
+          <div className="flex items-center justify-between px-1 shrink-0">
+            <span className="text-xs font-black text-white/90">
+              Thời gian: <span className="text-[#fdb913] font-black text-sm">{remainingTime}s</span>
             </span>
 
             <div className="flex items-center gap-2">
@@ -182,7 +223,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                   type="button"
                   onClick={handleUseFiftyFifty}
                   disabled={powerUps.fiftyFifty <= 0 || eliminatedOptions.length > 0}
-                  className={`px-3 py-1 rounded font-black text-xs uppercase flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-md font-black text-xs uppercase flex items-center gap-1 ${
                     powerUps.fiftyFifty > 0 && eliminatedOptions.length === 0
                       ? "bg-white text-gray-900 shadow"
                       : "bg-white/20 text-white/40 cursor-not-allowed"
@@ -197,9 +238,9 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                 type="button"
                 onClick={handleToggleDouble}
                 disabled={powerUps.doublePoints <= 0}
-                className={`px-3 py-1 rounded font-black text-xs uppercase flex items-center gap-1 ${
+                className={`px-3 py-1 rounded-md font-black text-xs uppercase flex items-center gap-1 ${
                   useDoublePointsThisRound
-                    ? "bg-[#ffa602] text-gray-900 shadow scale-105"
+                    ? "bg-[#fdb913] text-gray-900 shadow scale-105 ring-2 ring-white"
                     : powerUps.doublePoints > 0
                     ? "bg-white text-gray-900 shadow"
                     : "bg-white/20 text-white/40 cursor-not-allowed"
@@ -211,38 +252,67 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
             </div>
           </div>
 
-          {/* Nếu là Đúng / Sai -> 2 khối màu siêu to */}
+          {/* KHỐI NỘI DUNG CÂU HỎI HIỂN THỊ TRÊN MÀN HÌNH NGƯỜI CHƠI NẾU BẬT */}
+          {showQuestionsOnPlayer && (
+            <div className="bg-white rounded-xl p-3.5 shadow-md border-b-4 border-gray-300 text-center shrink-0">
+              <span className="text-[10px] font-black uppercase text-blue-700 block mb-0.5">
+                Câu {currentQuestionNumber} ({isTrueFalse ? "ĐÚNG / SAI" : "TRẮC NGHIỆM"})
+              </span>
+              <h3 className="text-base sm:text-lg font-black text-gray-900 leading-snug">
+                {questionTitle || "Nội dung câu hỏi đang được trình chiếu..."}
+              </h3>
+              {questionImageUrl && (
+                <div className="mt-2 flex justify-center max-h-32">
+                  <img
+                    src={questionImageUrl}
+                    alt="Minh họa"
+                    className="max-h-32 rounded-lg object-contain border border-gray-200"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CÁC NÚT ĐÁP ÁN */}
           {isTrueFalse ? (
-            <div className="grid grid-cols-1 gap-4 flex-1">
+            <div className="grid grid-cols-1 gap-3 flex-1 min-h-[160px]">
               {trueFalseOptions.map((btn) => (
                 <button
                   key={btn.id}
                   onClick={() => handleSelectAnswer(btn.id)}
                   className={`w-full h-full rounded-xl flex items-center justify-center gap-4 transition-all ${btn.theme} active:scale-95 cursor-pointer shadow-lg`}
                 >
-                  <span className="text-5xl text-white drop-shadow-md">{btn.icon}</span>
-                  <span className="text-4xl text-white font-black tracking-wider">{btn.text}</span>
+                  <span className="text-4xl text-white drop-shadow-md">{btn.icon}</span>
+                  <span className="text-3xl text-white font-black tracking-wider">{btn.text}</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 flex-1">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 flex-1 min-h-[220px]">
               {kahootOptions.map((btn) => {
                 const isEliminated = eliminatedOptions.includes(btn.id);
+                const optText = questionOptions.find((o) => o.id === btn.id)?.text;
+
                 return (
                   <button
                     key={btn.id}
                     disabled={isEliminated}
                     onClick={() => handleSelectAnswer(btn.id)}
-                    className={`w-full h-full rounded-lg flex items-center justify-center transition-all ${
+                    className={`w-full h-full rounded-xl flex flex-col items-center justify-center p-3 gap-1.5 transition-all ${
                       btn.theme
                     } ${
                       isEliminated
                         ? "opacity-15 cursor-not-allowed"
-                        : "active:scale-95 cursor-pointer"
+                        : "active:scale-95 cursor-pointer shadow-md"
                     }`}
                   >
-                    <span className="text-6xl text-white drop-shadow-md select-none">{btn.icon}</span>
+                    <span className="text-4xl sm:text-5xl text-white drop-shadow-md select-none">{btn.icon}</span>
+                    {/* Hiển thị chữ đáp án nếu bật chế độ đọc câu hỏi trên máy người chơi */}
+                    {showQuestionsOnPlayer && optText && (
+                      <span className="text-xs sm:text-sm font-black text-white text-center line-clamp-2 px-1">
+                        {optText}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -253,11 +323,11 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
 
       {/* 4. MÀN HÌNH ĐÃ GỬI LỰA CHỌN */}
       {playerState === "SUBMITTED" && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#381072]">
-          <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-white animate-spin mb-2" />
-          <h2 className="text-3xl font-black text-white">Đã ghi nhận!</h2>
-          <p className="text-purple-200 text-sm font-bold">
-            Hãy nhìn lên màn hình chiếu của Host để xem kết quả.
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#001d40]">
+          <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-[#fdb913] animate-spin mb-2" />
+          <h2 className="text-3xl font-black text-white">Đã ghi nhận đáp án!</h2>
+          <p className="text-blue-200 text-sm font-bold">
+            Hãy nhìn lên màn hình chiếu của Host hoặc chờ kết quả vòng đấu.
           </p>
         </div>
       )}
@@ -271,52 +341,54 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
         >
           {lastResult?.isCorrect ? (
             <>
-              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl">
+              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl ring-4 ring-green-300">
                 <Check className="w-14 h-14 text-[#26890c] stroke-[4]" />
               </div>
               <h2 className="text-4xl font-black text-white">Chính xác!</h2>
               <div className="text-2xl font-black text-white">+{lastResult.pointsEarned} điểm</div>
               {currentStreak >= 2 && (
-                <div className="bg-black/20 px-4 py-1.5 rounded-full text-white font-black text-sm">
+                <div className="bg-black/25 px-4 py-1.5 rounded-full text-white font-black text-sm">
                   🔥 Chuỗi đúng {currentStreak} câu liên tiếp!
                 </div>
               )}
             </>
           ) : (
             <>
-              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl">
+              <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-xl ring-4 ring-red-300">
                 <X className="w-14 h-14 text-[#e21b3c] stroke-[4]" />
               </div>
               <h2 className="text-4xl font-black text-white">Chưa đúng!</h2>
-              <p className="text-white/90 font-bold text-sm">Hãy cố gắng ở câu tiếp theo nhé!</p>
+              <p className="text-white/90 font-bold text-sm">Cố gắng ở câu hỏi tiếp theo nhé!</p>
             </>
           )}
 
-          <div className="mt-4 bg-black/20 px-6 py-2.5 rounded-lg text-white font-black text-lg">
-            Tổng điểm: {totalScore} pts
+          <div className="mt-4 bg-black/25 px-6 py-2.5 rounded-lg text-white font-black text-lg border border-white/10">
+            Tổng điểm hiện tại: {totalScore} pts
           </div>
         </div>
       )}
 
       {/* 6. MÀN HÌNH BẢNG XẾP HẠNG / KẾT THÚC */}
       {(playerState === "WAITING_NEXT" || playerState === "GAME_OVER") && (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#381072]">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#001d40]">
           <div className="text-5xl">{playerState === "GAME_OVER" ? "🏆" : "👀"}</div>
           <h2 className="text-3xl font-black text-white">
-            {playerState === "GAME_OVER" ? "Trò chơi kết thúc!" : "Bảng Xếp Hạng"}
+            {playerState === "GAME_OVER" ? "Trận đấu kết thúc!" : "Bảng Xếp Hạng"}
           </h2>
-          <p className="text-purple-200 text-sm font-bold max-w-xs">
-            Hãy nhìn lên màn hình chiếu của Host để theo dõi thứ hạng.
+          <p className="text-blue-200 text-sm font-bold max-w-xs">
+            {playerState === "GAME_OVER"
+              ? "Cảm ơn bạn đã tham gia trận đấu trên BKQuiz!"
+              : "Hãy nhìn lên màn hình chiếu của Host để theo dõi thứ hạng."}
           </p>
 
-          <div className="bg-white text-gray-900 px-6 py-3 rounded-lg font-black text-xl shadow">
-            Điểm của bạn: <span className="text-[#46178f]">{totalScore} pts</span>
+          <div className="bg-white text-[#002855] px-6 py-3 rounded-xl font-black text-xl shadow-lg border-b-4 border-gray-300">
+            Điểm chung cuộc: <span className="text-[#0052cc]">{totalScore} pts</span>
           </div>
 
           {playerState === "GAME_OVER" && (
             <button
               onClick={onLeave}
-              className="mt-4 px-6 py-3 rounded font-black text-sm uppercase tracking-wider btn-kahoot-white"
+              className="mt-4 px-6 py-3 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-white"
             >
               Thoát về Trang chủ
             </button>
@@ -325,7 +397,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
       )}
 
       {/* Khay Emoji Reaction */}
-      <div className="bg-[#381072] border-t-2 border-[#2b085a] px-3 py-2 flex items-center justify-around">
+      <div className="bg-[#001736] border-t-2 border-[#001026] px-3 py-2 flex items-center justify-around">
         {EMOJIS.map((emoji) => (
           <button
             key={emoji}

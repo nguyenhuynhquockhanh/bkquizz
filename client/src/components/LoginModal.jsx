@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, Lock, Mail, User, LogIn, UserPlus } from "lucide-react";
+import BKLogo from "./BKLogo";
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [isRegister, setIsRegister] = useState(false);
@@ -40,7 +41,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         onLoginSuccess(data);
         onClose();
       }
-    } catch (err) {
+    } catch (_err) {
       setErrorMsg("Không thể kết nối đến server backend!");
     } finally {
       setLoading(false);
@@ -58,30 +59,30 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         </button>
 
         <div className="text-center mb-5">
-          <div className="inline-flex p-3 rounded-2xl bg-[#46178f] text-white mb-2 shadow-md">
-            <Lock className="w-6 h-6" />
+          <div className="flex justify-center mb-2">
+            <BKLogo className="w-12 h-12" />
           </div>
           <h2 className="text-2xl font-black text-gray-900">
-            {isRegister ? "Đăng ký Tài khoản" : "Đăng nhập"}
+            {isRegister ? "Đăng ký Tài khoản BKQuiz" : "Đăng nhập Cổng BKQuiz"}
           </h2>
           <p className="text-gray-500 text-xs mt-1">
             {isRegister
-              ? "Tạo tài khoản để tự tạo và quản lý ngân hàng câu hỏi của bạn"
-              : "Đăng nhập để xem danh sách câu hỏi do bạn quản lý"}
+              ? "Tạo tài khoản Giảng viên / Sinh viên để quản lý ngân hàng câu hỏi"
+              : "Đăng nhập để khởi tạo phòng thi và quản lý bộ đề của bạn"}
           </p>
         </div>
 
         {/* Nút bấm điền nhanh tài khoản demo */}
         {!isRegister && (
-          <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs flex items-center justify-between">
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs flex items-center justify-between">
             <div>
-              <span className="font-black text-purple-900 block">Tài khoản dùng thử có sẵn:</span>
+              <span className="font-black text-[#002855] block">Tài khoản dùng thử có sẵn:</span>
               <span className="text-gray-600">demo@kahoot.com / password123</span>
             </div>
             <button
               type="button"
               onClick={handleQuickFill}
-              className="py-1 px-3 rounded bg-[#46178f] text-white font-bold hover:bg-[#381072] text-xs"
+              className="py-1 px-3 rounded bg-[#0052cc] text-white font-bold hover:bg-[#00388b] text-xs"
             >
               Điền nhanh
             </button>
@@ -105,10 +106,10 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
                 <input
                   type="text"
                   required
-                  placeholder="Nhập họ và tên..."
+                  placeholder="Ví dụ: Nguyễn Văn A"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#46178f]"
+                  className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#0052cc]"
                 />
               </div>
             </div>
@@ -123,10 +124,10 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
               <input
                 type="email"
                 required
-                placeholder="yourname@gmail.com"
+                placeholder="email@hcmut.edu.vn"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#46178f]"
+                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#0052cc]"
               />
             </div>
           </div>
@@ -143,7 +144,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#46178f]"
+                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#0052cc]"
               />
             </div>
           </div>
@@ -151,7 +152,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 mt-2 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green flex items-center justify-center gap-2"
+            className="w-full py-3.5 mt-2 rounded-lg font-black text-sm uppercase tracking-wider btn-bk-primary flex items-center justify-center gap-2"
           >
             {isRegister ? <UserPlus className="w-4 h-4 stroke-[3]" /> : <LogIn className="w-4 h-4 stroke-[3]" />}
             {loading ? "Đang xử lý..." : isRegister ? "Đăng ký tài khoản" : "Đăng nhập ngay"}
@@ -165,7 +166,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
               setIsRegister(!isRegister);
               setErrorMsg("");
             }}
-            className="text-xs font-bold text-[#46178f] hover:underline"
+            className="text-xs font-bold text-[#0052cc] hover:underline"
           >
             {isRegister
               ? "Đã có tài khoản? Bấm vào đây để Đăng nhập"
@@ -176,4 +177,3 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     </div>
   );
 }
-

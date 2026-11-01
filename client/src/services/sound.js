@@ -82,6 +82,26 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.35);
   }
 
+  // Tiếng Tíc tắc đếm ngược khi câu hỏi sắp hết giờ (<= 5s)
+  playTick() {
+    if (this.isMuted) return;
+    this.init();
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.05);
+  }
+
   // Tiếng chuông ăn mừng Podium chiến thắng
   playVictory() {
     if (this.isMuted) return;

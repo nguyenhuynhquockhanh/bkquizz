@@ -1,64 +1,63 @@
 import React from "react";
 import { PlusCircle, LogOut, BookOpen, LogIn } from "lucide-react";
+import BKLogo from "./BKLogo";
 
 export default function Navbar({ currentView, setView, currentUser, onOpenLogin, onLogout }) {
   return (
-    <header className="bg-[#381072] border-b-2 border-[#2b085a] shadow-md sticky top-0 z-50">
+    <header className="bg-[#00224a] border-b-2 border-[#001736] shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        {/* Brand Logo Kahoot Style */}
+        {/* Brand Logo Bách Khoa TP.HCM */}
         <div
           onClick={() => setView("home")}
-          className="flex items-center gap-1 cursor-pointer select-none group"
+          className="cursor-pointer select-none group transition-transform hover:scale-[1.01]"
         >
-          <span className="text-3xl font-black tracking-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.3)]">
-            Class<span className="text-[#ffa602]">Play</span>
-          </span>
-          <span className="text-3xl font-black text-[#e21b3c] animate-bounce">!</span>
+          <BKLogo showText={true} />
         </div>
 
         {/* Navigation Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => setView("home")}
             className={`px-3.5 py-2 rounded-lg font-black text-xs uppercase tracking-wider btn-kahoot-3d ${
               currentView === "home"
-                ? "bg-white text-[#333333] shadow-[0_4px_0_#cccccc]"
-                : "bg-[#46178f] text-white hover:bg-[#521da7] shadow-[0_4px_0_#2b085a]"
+                ? "bg-white text-[#002855] shadow-[0_4px_0_#cccccc]"
+                : "bg-[#003875] text-white hover:bg-[#004899] shadow-[0_4px_0_#001a38]"
             }`}
           >
             Vào chơi (PIN)
           </button>
 
-          {/* Khi ĐÃ ĐĂNG NHẬP -> Hiện menu Quản lý câu hỏi của mình và Tạo Quiz */}
           {currentUser ? (
             <>
               <button
                 onClick={() => setView("my-quizzes")}
                 className={`px-3.5 py-2 rounded-lg font-black text-xs uppercase tracking-wider flex items-center gap-1.5 btn-kahoot-3d ${
                   currentView === "my-quizzes"
-                    ? "bg-white text-[#333333] shadow-[0_4px_0_#cccccc]"
-                    : "bg-[#1368ce] text-white shadow-[0_4px_0_#0a4691]"
+                    ? "bg-white text-[#002855] shadow-[0_4px_0_#cccccc]"
+                    : "bg-[#0052cc] text-white shadow-[0_4px_0_#00388b] hover:bg-[#0c62e2]"
                 }`}
               >
                 <BookOpen className="w-4 h-4 stroke-[2.5]" />
-                Câu hỏi của tôi
+                <span className="hidden sm:inline">Bộ đề của tôi</span>
+                <span className="sm:hidden">Bộ đề</span>
               </button>
 
               <button
                 onClick={() => setView("editor")}
                 className={`px-3.5 py-2 rounded-lg font-black text-xs uppercase tracking-wider flex items-center gap-1.5 btn-kahoot-3d ${
                   currentView === "editor"
-                    ? "bg-white text-[#333333] shadow-[0_4px_0_#cccccc]"
+                    ? "bg-white text-[#002855] shadow-[0_4px_0_#cccccc]"
                     : "btn-kahoot-green"
                 }`}
               >
                 <PlusCircle className="w-4 h-4 stroke-[3]" />
-                Tạo Quiz
+                <span className="hidden sm:inline">Tạo Đề Mới</span>
+                <span className="sm:hidden">Tạo đề</span>
               </button>
 
               {/* Tên người dùng & Đăng xuất */}
               <div className="flex items-center gap-2 pl-2 border-l border-white/20">
-                <span className="hidden sm:inline font-bold text-xs text-purple-200">
+                <span className="hidden md:inline font-bold text-xs text-blue-200">
                   {currentUser.name}
                 </span>
 
@@ -74,7 +73,7 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
           ) : (
             <button
               onClick={onOpenLogin}
-              className="px-4 py-2 rounded-lg font-black text-xs uppercase tracking-wider flex items-center gap-1.5 btn-kahoot-white shadow-[0_4px_0_#cccccc]"
+              className="px-4 py-2 rounded-lg font-black text-xs uppercase tracking-wider flex items-center gap-1.5 btn-bk-gold"
             >
               <LogIn className="w-4 h-4 stroke-[2.5]" />
               Đăng nhập

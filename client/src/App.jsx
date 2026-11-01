@@ -13,7 +13,7 @@ export default function App() {
   const [roomData, setRoomData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem("kahoot_user");
+    const saved = localStorage.getItem("bkquiz_user") || localStorage.getItem("kahoot_user");
     return saved ? JSON.parse(saved) : null;
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -59,12 +59,13 @@ export default function App() {
 
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
-    localStorage.setItem("kahoot_user", JSON.stringify(user));
-    setCurrentView("my-quizzes"); // Đăng nhập xong vào thẳng danh sách câu hỏi của mình
+    localStorage.setItem("bkquiz_user", JSON.stringify(user));
+    setCurrentView("my-quizzes");
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
+    localStorage.removeItem("bkquiz_user");
     localStorage.removeItem("kahoot_user");
     setCurrentView("home");
   };
@@ -80,7 +81,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#46178f] text-white flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-[#002855] text-white flex flex-col font-sans select-none">
       {/* Navbar chỉ hiển thị ở màn hình thông thường (ẩn khi Host/Player toàn màn hình) */}
       {currentView !== "host" && currentView !== "player" && (
         <Navbar

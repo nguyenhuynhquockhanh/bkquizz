@@ -21,6 +21,7 @@ export class GameManager {
       pin,
       hostSocketId,
       quiz,
+      showQuestionsOnPlayerScreen: quiz?.showQuestionsOnPlayerScreen !== false,
       status: "LOBBY",
       currentQuestionIndex: -1,
       players: new Map(),
@@ -112,7 +113,8 @@ export class GameManager {
       questionTitle: currentQ.question,
       questionType: currentQ.type || "MULTIPLE_CHOICE",
       imageUrl: currentQ.imageUrl || "",
-      timeLimit: currentQ.timeLimit
+      timeLimit: currentQ.timeLimit,
+      showQuestionsOnPlayer: room.showQuestionsOnPlayerScreen !== false
     });
 
     setTimeout(() => {
@@ -135,6 +137,8 @@ export class GameManager {
       timeLimit: currentQ.timeLimit
     });
 
+    const showQuestionsOnPlayer = room.showQuestionsOnPlayerScreen !== false;
+
     for (const player of room.players.values()) {
       this.io.to(player.socketId).emit("question_start_player", {
         questionNumber: room.currentQuestionIndex + 1,
@@ -142,7 +146,13 @@ export class GameManager {
         timeLimit: currentQ.timeLimit,
         questionType: currentQ.type || "MULTIPLE_CHOICE",
         optionsCount: currentQ.options.length,
-        powerUps: player.powerUps
+        powerUps: player.powerUps,
+        showQuestionsOnPlayer,
+        questionTitle: showQuestionsOnPlayer ? currentQ.question : null,
+        imageUrl: showQuestionsOnPlayer ? (currentQ.imageUrl || "") : null,
+        options: showQuestionsOnPlayer
+          ? currentQ.options.map((opt) => ({ id: opt.id, text: opt.text }))
+          : null
       });
     }
 

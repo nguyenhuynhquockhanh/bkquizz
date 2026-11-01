@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import confetti from "canvas-confetti";
-import { Users, Play, Trophy, ArrowRight, Download, Check, X, Volume2, VolumeX, Music } from "lucide-react";
+import { Users, ArrowRight, Download, Check, X, Volume2, VolumeX, Music, Monitor } from "lucide-react";
 import { sounds } from "../services/sound";
+import BKLogo from "./BKLogo";
 
 export default function HostScreen({ roomData, socket, onLeave }) {
   const [roomState, setRoomState] = useState("LOBBY");
@@ -22,6 +23,14 @@ export default function HostScreen({ roomData, socket, onLeave }) {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
   const joinUrl = `${window.location.origin}/?pin=${roomData?.pin}`;
+
+  const triggerConfetti = () => {
+    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+    setTimeout(() => {
+      confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0 } });
+      confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1 } });
+    }, 600);
+  };
 
   useEffect(() => {
     socket.on("player_joined", ({ players }) => {
@@ -51,7 +60,6 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       setRemainingTime(timeLimit);
       setAnsweredCount(0);
 
-      // Kích hoạt nhạc nền hồi hộp dồn dập chuẩn Kahoot!
       sounds.startQuestionBeat();
     });
 
@@ -68,7 +76,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       setRoomState("QUESTION_RESULT");
       setCurrentQuestion(question);
       setQuestionStats(stats);
-      sounds.stopQuestionBeat(); // Dừng nhạc hồi hộp
+      sounds.stopQuestionBeat();
       sounds.playPop();
     });
 
@@ -110,14 +118,6 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       socket.off("floating_reaction");
     };
   }, [socket, roomData?.pin]);
-
-  const triggerConfetti = () => {
-    confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-    setTimeout(() => {
-      confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0 } });
-      confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1 } });
-    }, 600);
-  };
 
   const handleStartGame = () => {
     sounds.stopLobbyMusic();
@@ -161,14 +161,14 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const activeOptionConfigs = isTrueFalse ? trueFalseBlocks : kahootBlocks;
 
   return (
-    <div className="min-h-screen bg-[#46178f] flex flex-col justify-between select-none relative overflow-hidden">
+    <div className="min-h-screen bg-[#002855] flex flex-col justify-between select-none relative overflow-hidden">
       {/* Floating Reactions Overlay */}
       <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
         {floatingReactions.map((r) => (
           <div
             key={r.id}
             className="absolute bottom-16 animate-float-up flex items-center gap-1.5 px-3 py-1 bg-white text-gray-900 rounded-full shadow-lg border border-gray-200"
-            style={{ left: `${Math.random() * 70 + 15}%` }}
+            style={{ left: `${(parseInt(r.id, 36) % 70) + 15}%` }}
           >
             <span className="text-2xl">{r.emoji}</span>
             <span className="text-xs font-black">{r.nickname}</span>
@@ -181,14 +181,20 @@ export default function HostScreen({ roomData, socket, onLeave }) {
         <div className="flex-1 flex flex-col justify-between">
           <div className="bg-white border-b-4 border-gray-300 py-4 px-6 sm:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
             <div className="flex items-center gap-4">
-              <div className="bg-gray-100 p-1.5 rounded border border-gray-300">
-                <QRCodeSVG value={joinUrl} size={70} />
+              <div className="bg-gray-100 p-1.5 rounded-lg border border-gray-300 shadow-inner">
+                <QRCodeSVG value={joinUrl} size={76} />
               </div>
               <div className="text-left">
-                <div className="text-xs font-black uppercase tracking-wider text-gray-600">
-                  Tham gia tại trình duyệt hoặc quét mã QR
+                <div className="flex items-center gap-2 mb-1">
+                  <BKLogo className="w-6 h-6" />
+                  <span className="text-xs font-black uppercase tracking-wider text-[#002855]">
+                    BKQuiz • ĐH Bách Khoa TP.HCM
+                  </span>
                 </div>
-                <div className="text-sm font-extrabold text-gray-900">
+                <div className="text-xs text-gray-500 font-bold">
+                  Quét mã QR hoặc truy cập trình duyệt:
+                </div>
+                <div className="text-base font-black text-[#0052cc]">
                   {window.location.host}
                 </div>
               </div>
@@ -196,9 +202,9 @@ export default function HostScreen({ roomData, socket, onLeave }) {
 
             <div className="text-center sm:text-right">
               <div className="text-xs font-black uppercase tracking-widest text-gray-500">
-                MÃ PIN TRÒ CHƠI:
+                MÃ PIN PHÒNG THI:
               </div>
-              <div className="text-4xl sm:text-5xl font-black text-gray-900 tracking-wider">
+              <div className="text-5xl font-black text-[#002855] tracking-wider drop-shadow-sm">
                 {roomData?.pin}
               </div>
             </div>
@@ -207,7 +213,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               <button
                 onClick={toggleMusic}
                 title="Bật/Tắt nhạc chờ Lobby"
-                className={`p-3 rounded-md font-black text-sm uppercase flex items-center gap-1.5 ${
+                className={`p-3 rounded-lg font-black text-sm uppercase flex items-center gap-1.5 ${
                   isMusicPlaying
                     ? "bg-[#26890c] text-white shadow-[0_4px_0_#1b6308]"
                     : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -219,7 +225,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               <button
                 onClick={toggleSound}
                 title="Bật/Tắt âm thanh"
-                className="p-3 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+                className="p-3 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700"
               >
                 {isMuted ? <VolumeX className="w-5 h-5 text-red-600" /> : <Volume2 className="w-5 h-5" />}
               </button>
@@ -227,31 +233,36 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               <button
                 onClick={handleStartGame}
                 disabled={players.length === 0}
-                className="px-8 py-3 rounded-md font-black text-lg uppercase tracking-wider btn-kahoot-black disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-8 py-3 rounded-lg font-black text-lg uppercase tracking-wider btn-bk-gold disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
               >
-                Bắt đầu
+                Bắt đầu thi
               </button>
             </div>
           </div>
 
           <div className="flex-1 max-w-6xl mx-auto w-full p-6 sm:p-10 flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div className="flex items-center gap-2 text-white font-black text-xl">
-                <Users className="w-6 h-6" />
-                <span>{players.length} Người chơi đã vào</span>
+                <Users className="w-6 h-6 text-[#fdb913]" />
+                <span>{players.length} Thí sinh đã tham gia</span>
               </div>
 
-              <div className="text-white/80 font-bold text-sm">
-                Đang chơi bộ đề: <span className="text-white font-black">{roomData?.quizTitle}</span>
+              <div className="text-blue-200 font-bold text-sm flex items-center gap-3">
+                {roomData?.showQuestionsOnPlayerScreen !== false && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-900/60 border border-blue-400/30 text-white text-xs font-bold">
+                    <Monitor className="w-3.5 h-3.5 text-green-400" /> Hiện câu hỏi trên máy thí sinh
+                  </span>
+                )}
+                <span>Bộ đề: <span className="text-white font-black">{roomData?.quizTitle}</span></span>
               </div>
             </div>
 
             {players.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-white animate-spin mb-4" />
-                <h3 className="text-2xl font-black text-white">Đang đợi người chơi tham gia...</h3>
-                <p className="text-purple-200 text-sm mt-1">
-                  Nhập mã PIN <span className="font-black text-white">{roomData?.pin}</span> trên thiết bị của bạn
+                <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-[#fdb913] animate-spin mb-4" />
+                <h3 className="text-2xl font-black text-white">Đang đợi thí sinh vào phòng...</h3>
+                <p className="text-blue-200 text-sm mt-1">
+                  Nhập mã PIN <span className="font-black text-[#fdb913] text-lg">{roomData?.pin}</span> trên thiết bị cá nhân
                 </p>
               </div>
             ) : (
@@ -271,7 +282,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
             <div className="pt-4 flex justify-start">
               <button
                 onClick={onLeave}
-                className="px-5 py-2 rounded font-bold text-sm text-purple-200 hover:text-white bg-black/20 hover:bg-black/30"
+                className="px-5 py-2 rounded-lg font-bold text-sm text-blue-200 hover:text-white bg-black/30 hover:bg-black/50"
               >
                 Hủy phòng & Quay lại
               </button>
@@ -283,30 +294,30 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       {/* 2. MÀN HÌNH ĐẾM NGƯỢC GIỚI THIỆU CÂU HỎI */}
       {roomState === "QUESTION_INTRO" && (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
-          <div className="bg-black/30 px-6 py-2 rounded-full text-white font-black text-sm uppercase tracking-wider">
+          <div className="bg-black/40 px-6 py-2 rounded-full text-white font-black text-sm uppercase tracking-wider border border-white/20">
             Câu hỏi {questionNumber} / {totalQuestions}
           </div>
-          <div className="w-full max-w-4xl bg-white rounded-lg p-8 sm:p-12 shadow-2xl border-b-8 border-gray-300">
+          <div className="w-full max-w-4xl bg-white rounded-xl p-8 sm:p-12 shadow-2xl border-b-8 border-gray-300">
             <h1 className="text-3xl sm:text-5xl font-black text-gray-900 leading-tight">
               {currentQuestion?.question}
             </h1>
           </div>
-          <div className="text-6xl font-black text-white animate-pulse">
+          <div className="text-6xl font-black text-[#fdb913] animate-pulse">
             Sẵn sàng...
           </div>
         </div>
       )}
 
-      {/* 3. MÀN HÌNH CÂU HỎI ĐANG DIỄN RA (Có Ảnh minh họa & Nhạc hồi hộp) */}
+      {/* 3. MÀN HÌNH CÂU HỎI ĐANG DIỄN RA */}
       {roomState === "QUESTION_ACTIVE" && (
         <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 max-w-7xl mx-auto w-full">
           {/* Thanh trên: Tiêu đề câu hỏi, đồng hồ đếm ngược, số người trả lời */}
           <div className="flex items-center justify-between gap-4 mb-3">
-            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#381072] border-4 border-white flex items-center justify-center text-3xl font-black text-white shadow-lg shrink-0">
+            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#001736] border-4 border-[#fdb913] flex items-center justify-center text-3xl font-black text-white shadow-lg shrink-0">
               {remainingTime}
             </div>
 
-            <div className="flex-1 bg-white rounded-lg p-4 sm:p-6 shadow-xl border-b-4 border-gray-300 text-center">
+            <div className="flex-1 bg-white rounded-xl p-4 sm:p-6 shadow-xl border-b-4 border-gray-300 text-center">
               <span className="text-xs font-black uppercase tracking-wider text-gray-400 block mb-1">
                 Câu {questionNumber} / {totalQuestions} ({isTrueFalse ? "ĐÚNG / SAI" : "4 LỰA CHỌN"})
               </span>
@@ -315,9 +326,9 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               </h2>
             </div>
 
-            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#381072] border-4 border-white flex flex-col items-center justify-center text-white shadow-lg shrink-0">
+            <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#001736] border-4 border-white flex flex-col items-center justify-center text-white shadow-lg shrink-0">
               <span className="text-2xl font-black">{answeredCount}</span>
-              <span className="text-[10px] font-black uppercase text-purple-200">Đã trả lời</span>
+              <span className="text-[10px] font-black uppercase text-blue-200">Đã nộp</span>
             </div>
           </div>
 
@@ -327,14 +338,14 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               <div className="max-h-56 max-w-lg rounded-xl overflow-hidden shadow-2xl border-4 border-white bg-black">
                 <img
                   src={currentQuestion.imageUrl}
-                  alt="Minh họa"
+                  alt="Minh họa câu hỏi"
                   className="w-full h-full object-contain max-h-56"
                 />
               </div>
             </div>
           )}
 
-          {/* Các khối màu đáp án (2 khối nếu Đúng/Sai, 4 khối nếu trắc nghiệm) */}
+          {/* Các khối màu đáp án */}
           <div
             className={`grid gap-4 flex-1 items-stretch mt-2 ${
               isTrueFalse ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"
@@ -343,7 +354,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
             {currentQuestion?.options?.map((opt, index) => (
               <div
                 key={opt.id}
-                className={`rounded-lg p-6 sm:p-7 flex items-center gap-5 text-white font-black text-xl sm:text-2xl transition-all ${
+                className={`rounded-xl p-6 sm:p-7 flex items-center gap-5 text-white font-black text-xl sm:text-2xl transition-all shadow-md ${
                   activeOptionConfigs[index]?.bg
                 }`}
               >
@@ -358,9 +369,9 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       {/* 4. MÀN HÌNH KẾT QUẢ CÂU HỎI */}
       {roomState === "QUESTION_RESULT" && (
         <div className="flex-1 flex flex-col justify-between p-6 max-w-5xl mx-auto w-full">
-          <div className="bg-white rounded-lg p-5 text-center shadow-lg border-b-4 border-gray-300 mb-6">
+          <div className="bg-white rounded-xl p-5 text-center shadow-lg border-b-4 border-gray-300 mb-6">
             <span className="text-xs font-black uppercase text-gray-400 block mb-1">
-              Kết quả câu hỏi {questionNumber}
+              Thống kê kết quả câu hỏi {questionNumber}
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
               {currentQuestion?.question}
@@ -368,7 +379,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
           </div>
 
           {/* Biểu đồ cột */}
-          <div className="bg-[#381072] border-4 border-[#2b085a] rounded-lg p-8 flex-1 flex flex-col justify-end">
+          <div className="bg-[#001736] border-4 border-[#002f66] rounded-xl p-8 flex-1 flex flex-col justify-end">
             <div
               className={`grid gap-4 sm:gap-8 h-64 items-end ${
                 isTrueFalse ? "grid-cols-2 max-w-md mx-auto w-full" : "grid-cols-4"
@@ -384,7 +395,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
                     <span className="text-2xl sm:text-3xl font-black text-white">{count}</span>
                     <div
                       style={{ height: `${heightPercent}%` }}
-                      className={`w-full rounded-t-lg flex flex-col items-center justify-between p-2 shadow-lg transition-all duration-500 ${
+                      className={`w-full rounded-t-xl flex flex-col items-center justify-between p-2 shadow-lg transition-all duration-500 ${
                         activeOptionConfigs[idx]?.bg
                       }`}
                     >
@@ -422,9 +433,9 @@ export default function HostScreen({ roomData, socket, onLeave }) {
         <div className="flex-1 flex flex-col justify-between p-6 max-w-4xl mx-auto w-full">
           <div className="text-center mb-6">
             <h1 className="text-4xl font-black text-white tracking-tight uppercase">
-              Bảng Xếp Hạng
+              Bảng Xếp Hạng Điểm Số
             </h1>
-            <p className="text-purple-200 text-sm font-bold mt-1">
+            <p className="text-blue-200 text-sm font-bold mt-1">
               Top 5 dẫn đầu sau câu {questionNumber} / {totalQuestions}
             </p>
           </div>
@@ -433,7 +444,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
             {leaderboard.map((p, index) => (
               <div
                 key={p.id}
-                className="bg-white text-gray-900 rounded-lg p-4 flex items-center justify-between shadow-lg border-b-4 border-gray-300 animate-in slide-in-from-right duration-300"
+                className="bg-white text-gray-900 rounded-xl p-4 flex items-center justify-between shadow-lg border-b-4 border-gray-300 animate-in slide-in-from-right duration-300"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center font-black text-lg text-gray-800">
@@ -444,13 +455,13 @@ export default function HostScreen({ roomData, socket, onLeave }) {
                     <span className="font-black text-xl text-gray-900 block">{p.nickname}</span>
                     {p.streak >= 2 && (
                       <span className="text-xs font-black text-[#e21b3c]">
-                        🔥 Chuỗi {p.streak} câu đúng
+                        🔥 Chuỗi {p.streak} câu đúng liên tiếp
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="text-2xl font-black text-[#46178f]">
+                <div className="text-2xl font-black text-[#0052cc]">
                   {p.score} <span className="text-sm text-gray-500 font-bold">pts</span>
                 </div>
               </div>
@@ -473,11 +484,14 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       {roomState === "GAME_OVER" && (
         <div className="flex-1 flex flex-col justify-between p-6 max-w-5xl mx-auto w-full">
           <div className="text-center mb-4">
+            <div className="flex justify-center mb-1">
+              <BKLogo className="w-12 h-12" />
+            </div>
             <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight uppercase">
               Bục Vinh Danh Podium
             </h1>
-            <p className="text-purple-200 text-sm font-bold mt-1">
-              Chúc mừng các bạn đã xuất sắc chiến thắng trò chơi!
+            <p className="text-blue-200 text-sm font-bold mt-1">
+              Chúc mừng các thí sinh xuất sắc nhất trận đấu BKQuiz!
             </p>
           </div>
 
@@ -489,16 +503,16 @@ export default function HostScreen({ roomData, socket, onLeave }) {
                   <div className="font-black text-white text-base mb-1 truncate w-full text-center">
                     {podium.second.nickname}
                   </div>
-                  <div className="text-xs text-purple-200 font-black mb-2">
+                  <div className="text-xs text-blue-200 font-black mb-2">
                     {podium.second.score} pts
                   </div>
-                  <div className="w-full h-44 rounded-t-lg bg-gray-300 border-t-4 border-white flex flex-col items-center justify-center shadow-xl">
+                  <div className="w-full h-44 rounded-t-xl bg-gray-300 border-t-4 border-white flex flex-col items-center justify-center shadow-xl">
                     <span className="text-5xl font-black text-gray-800">2</span>
                     <span className="text-xs font-black text-gray-700 uppercase">Hạng 2</span>
                   </div>
                 </>
               ) : (
-                <div className="w-full h-44 bg-white/10 rounded-t-lg" />
+                <div className="w-full h-44 bg-white/10 rounded-t-xl" />
               )}
             </div>
 
@@ -513,13 +527,13 @@ export default function HostScreen({ roomData, socket, onLeave }) {
                   <div className="text-sm text-yellow-300 font-black mb-2">
                     {podium.first.score} pts
                   </div>
-                  <div className="w-full h-64 rounded-t-lg bg-[#ffa602] border-t-4 border-yellow-200 flex flex-col items-center justify-center shadow-2xl">
+                  <div className="w-full h-64 rounded-t-xl bg-[#ffa602] border-t-4 border-yellow-200 flex flex-col items-center justify-center shadow-2xl">
                     <span className="text-6xl font-black text-gray-900">1</span>
                     <span className="text-sm font-black text-gray-900 uppercase">Quán Quân</span>
                   </div>
                 </>
               ) : (
-                <div className="w-full h-64 bg-white/10 rounded-t-lg" />
+                <div className="w-full h-64 bg-white/10 rounded-t-xl" />
               )}
             </div>
 
@@ -530,16 +544,16 @@ export default function HostScreen({ roomData, socket, onLeave }) {
                   <div className="font-black text-white text-base mb-1 truncate w-full text-center">
                     {podium.third.nickname}
                   </div>
-                  <div className="text-xs text-purple-200 font-black mb-2">
+                  <div className="text-xs text-blue-200 font-black mb-2">
                     {podium.third.score} pts
                   </div>
-                  <div className="w-full h-32 rounded-t-lg bg-[#b06126] border-t-4 border-orange-200 flex flex-col items-center justify-center shadow-xl">
+                  <div className="w-full h-32 rounded-t-xl bg-[#b06126] border-t-4 border-orange-200 flex flex-col items-center justify-center shadow-xl">
                     <span className="text-4xl font-black text-white">3</span>
                     <span className="text-xs font-black text-orange-200 uppercase">Hạng 3</span>
                   </div>
                 </>
               ) : (
-                <div className="w-full h-32 bg-white/10 rounded-t-lg" />
+                <div className="w-full h-32 bg-white/10 rounded-t-xl" />
               )}
             </div>
           </div>
@@ -565,4 +579,3 @@ export default function HostScreen({ roomData, socket, onLeave }) {
     </div>
   );
 }
-

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Trash2, ArrowLeft, Clock, Award, Check, Image as ImageIcon, CheckCircle2, HelpCircle } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Clock, Award, Check, Image as ImageIcon, HelpCircle, Monitor, FileText } from "lucide-react";
 
 export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser }) {
   const [title, setTitle] = useState(editQuizData?.title || "");
@@ -7,6 +7,9 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
   const [coverImage, setCoverImage] = useState(
     editQuizData?.coverImage ||
       "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80"
+  );
+  const [showQuestionsOnPlayerScreen, setShowQuestionsOnPlayerScreen] = useState(
+    editQuizData?.showQuestionsOnPlayerScreen !== false
   );
   const [questions, setQuestions] = useState(
     editQuizData?.questions || [
@@ -28,6 +31,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
   );
   const [activeQIndex, setActiveQIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [showMetaSettings, setShowMetaSettings] = useState(false);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -48,7 +52,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
     }
 
     const newQ = {
-      id: `q_${Date.now()}`,
+      id: `q_${Date.now()}_${questions.length}`,
       type,
       question: type === "TRUE_FALSE" ? "Mệnh đề này là Đúng hay Sai?" : "Nhập câu hỏi của bạn tại đây...",
       imageUrl: "",
@@ -133,6 +137,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
           title: title.trim(),
           description: description.trim(),
           coverImage,
+          showQuestionsOnPlayerScreen,
           questions
         })
       });
@@ -160,20 +165,19 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
     { bg: "bg-[#26890c]", icon: "■", name: "Lục" }
   ];
 
-  // Màu cho Đúng/Sai
   const trueFalseConfigs = [
     { bg: "bg-[#1368ce]", icon: "◆", name: "ĐÚNG" },
     { bg: "bg-[#e21b3c]", icon: "▲", name: "SAI" }
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-[#f2f2f2] text-gray-900 flex flex-col justify-between">
-      {/* Top Header thanh công cụ Kahoot Creator */}
-      <div className="bg-white border-b-2 border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-[#f0f4f9] text-gray-900 flex flex-col justify-between">
+      {/* Top Header thanh công cụ BK Quiz Creator */}
+      <div className="bg-white border-b-2 border-gray-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded hover:bg-gray-100 text-gray-600 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -183,19 +187,82 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               placeholder="Nhập tiêu đề bộ đề thi..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="font-black text-xl text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-black focus:outline-none px-1 py-0.5 w-72 sm:w-96"
+              className="font-black text-xl text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-[#0052cc] focus:outline-none px-1 py-0.5 w-64 sm:w-96"
             />
           </div>
         </div>
 
-        <button
-          onClick={handleSaveQuiz}
-          disabled={isSaving}
-          className="px-6 py-2.5 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green"
-        >
-          {isSaving ? "Đang lưu..." : editQuizData?.id ? "Cập nhật đề" : "Lưu bộ đề"}
-        </button>
+        {/* Nút cài đặt & hiển thị câu hỏi trên máy người chơi */}
+        <div className="flex items-center gap-3">
+          {/* Nút bật/tắt hiển thị câu hỏi cho người chơi */}
+          <button
+            type="button"
+            onClick={() => setShowQuestionsOnPlayerScreen(!showQuestionsOnPlayerScreen)}
+            className={`px-3 py-2 rounded-lg text-xs font-black uppercase flex items-center gap-1.5 transition-all border ${
+              showQuestionsOnPlayerScreen
+                ? "bg-green-50 border-green-300 text-green-700 shadow-sm"
+                : "bg-gray-50 border-gray-300 text-gray-500"
+            }`}
+            title="Bật/Tắt hiển thị câu hỏi và chữ đáp án trực tiếp trên điện thoại/máy tính của người chơi"
+          >
+            <Monitor className="w-4 h-4" />
+            <span>Hiển thị câu hỏi trên máy người chơi:</span>
+            <span className={`px-1.5 py-0.5 rounded text-[11px] font-black ${
+              showQuestionsOnPlayerScreen ? "bg-green-600 text-white" : "bg-gray-400 text-white"
+            }`}>
+              {showQuestionsOnPlayerScreen ? "BẬT" : "TẮT"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowMetaSettings(!showMetaSettings)}
+            className="px-3 py-2 rounded-lg text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1.5"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Thông tin bộ đề</span>
+          </button>
+
+          <button
+            onClick={handleSaveQuiz}
+            disabled={isSaving}
+            className="px-6 py-2.5 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green shadow"
+          >
+            {isSaving ? "Đang lưu..." : editQuizData?.id ? "Cập nhật đề" : "Lưu bộ đề"}
+          </button>
+        </div>
       </div>
+
+      {/* Panel bổ sung: Mô tả & Ảnh bìa bộ đề */}
+      {showMetaSettings && (
+        <div className="bg-blue-50 border-b border-blue-200 px-6 py-4 flex flex-col sm:flex-row gap-4 items-center animate-in slide-in-from-top-2 duration-200">
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-black uppercase text-gray-600 mb-1">
+              Mô tả ngắn về bộ đề:
+            </label>
+            <input
+              type="text"
+              placeholder="Ví dụ: Đề trắc nghiệm môn Mạng Máy Tính - Khoa KH&KT Máy Tính HCMUT"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full bg-white border border-gray-300 rounded px-3 py-1.5 text-sm font-bold text-gray-800 focus:outline-none focus:border-[#0052cc]"
+            />
+          </div>
+
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-black uppercase text-gray-600 mb-1">
+              Link ảnh bìa bộ đề (Cover Image):
+            </label>
+            <input
+              type="text"
+              placeholder="URL ảnh bìa Unsplash hoặc web..."
+              value={coverImage}
+              onChange={(e) => setCoverImage(e.target.value)}
+              className="w-full bg-white border border-gray-300 rounded px-3 py-1.5 text-sm font-bold text-gray-800 focus:outline-none focus:border-[#0052cc]"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Vùng soạn thảo chính */}
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full p-4 sm:p-6 gap-6">
@@ -209,7 +276,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               <button
                 onClick={() => handleAddQuestion("MULTIPLE_CHOICE")}
                 title="Thêm trắc nghiệm 4 lựa chọn"
-                className="px-2.5 py-1.5 rounded font-black text-xs uppercase bg-[#46178f] text-white flex items-center gap-1 shadow-sm hover:bg-[#381072]"
+                className="px-2.5 py-1.5 rounded-lg font-black text-xs uppercase bg-[#0052cc] text-white flex items-center gap-1 shadow-sm hover:bg-[#00388b]"
               >
                 <Plus className="w-3.5 h-3.5" />
                 4 Lựa chọn
@@ -217,7 +284,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               <button
                 onClick={() => handleAddQuestion("TRUE_FALSE")}
                 title="Thêm câu hỏi Đúng / Sai"
-                className="px-2.5 py-1.5 rounded font-black text-xs uppercase bg-[#1368ce] text-white flex items-center gap-1 shadow-sm hover:bg-[#0c4d9b]"
+                className="px-2.5 py-1.5 rounded-lg font-black text-xs uppercase bg-[#d89e00] text-white flex items-center gap-1 shadow-sm hover:bg-[#b08000]"
               >
                 Đúng/Sai
               </button>
@@ -227,21 +294,21 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
           <div className="flex-1 space-y-2 overflow-y-auto max-h-[600px] pr-1">
             {questions.map((q, idx) => (
               <div
-                key={q.id}
+                key={q.id || idx}
                 onClick={() => setActiveQIndex(idx)}
                 className={`p-3 rounded-lg border-2 flex items-center justify-between cursor-pointer transition-all ${
                   activeQIndex === idx
-                    ? "bg-white border-[#46178f] shadow-md scale-[1.02]"
+                    ? "bg-white border-[#0052cc] shadow-md scale-[1.02]"
                     : "bg-white/80 border-gray-200 hover:bg-white"
                 }`}
               >
                 <div className="flex items-center gap-2.5 overflow-hidden">
-                  <span className="font-black text-sm text-gray-500">{idx + 1}</span>
+                  <span className="font-black text-sm text-[#002855]">{idx + 1}</span>
                   <div className="overflow-hidden">
                     <span className="text-xs font-bold text-gray-800 truncate block max-w-[120px]">
                       {q.question || "Chưa có nội dung"}
                     </span>
-                    <span className="text-[10px] font-black uppercase text-purple-700">
+                    <span className="text-[10px] font-black uppercase text-[#0052cc]">
                       {q.type === "TRUE_FALSE" ? "Đúng/Sai" : "4 Lựa chọn"}
                     </span>
                   </div>
@@ -262,20 +329,20 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
         {/* Khu vực giữa: Khung soạn thảo câu hỏi chi tiết */}
         <div className="flex-1 flex flex-col justify-between space-y-4">
           {/* Ô nhập câu hỏi lớn ở trên */}
-          <div className="bg-white rounded-lg p-5 shadow-md border-b-4 border-gray-200 text-center">
+          <div className="bg-white rounded-xl p-5 shadow-md border-b-4 border-gray-200 text-center">
             <textarea
               rows={2}
               value={currentQ.question}
               onChange={(e) => updateCurrentQuestion("question", e.target.value)}
-              placeholder="Bắt đầu nhập câu hỏi của bạn tại đây..."
+              placeholder="Bắt đầu nhập nội dung câu hỏi tại đây..."
               className="w-full text-center text-xl sm:text-2xl font-black text-gray-900 placeholder-gray-400 border-0 focus:outline-none resize-none"
             />
           </div>
 
-          {/* Ô nhập ảnh minh họa cho câu hỏi (Mới) */}
+          {/* Ô nhập ảnh minh họa cho câu hỏi */}
           <div className="bg-white rounded-lg p-3.5 shadow-sm border border-gray-200 flex flex-col sm:flex-row items-center gap-3">
             <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-500 shrink-0">
-              <ImageIcon className="w-4 h-4 text-[#46178f]" />
+              <ImageIcon className="w-4 h-4 text-[#0052cc]" />
               <span>Link ảnh minh họa:</span>
             </div>
             <input
@@ -283,7 +350,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               placeholder="Dán URL ảnh minh họa (tùy chọn, ví dụ: https://images.unsplash.com/...)"
               value={currentQ.imageUrl || ""}
               onChange={(e) => updateCurrentQuestion("imageUrl", e.target.value)}
-              className="flex-1 bg-gray-50 border border-gray-300 rounded px-3 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#46178f]"
+              className="flex-1 bg-gray-50 border border-gray-300 rounded px-3 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#0052cc]"
             />
             {currentQ.imageUrl && (
               <img
@@ -298,12 +365,12 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
           <div className="flex flex-wrap items-center justify-center gap-4 bg-white py-2 px-4 rounded-lg shadow-sm border border-gray-200">
             {/* Loại câu hỏi */}
             <div className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-[#46178f]" />
+              <HelpCircle className="w-4 h-4 text-[#0052cc]" />
               <span className="text-xs font-black uppercase text-gray-500">Dạng câu:</span>
               <select
                 value={currentQ.type || "MULTIPLE_CHOICE"}
                 onChange={(e) => handleChangeQuestionType(e.target.value)}
-                className="font-black text-sm text-[#46178f] bg-purple-50 rounded px-2.5 py-1 focus:outline-none"
+                className="font-black text-sm text-[#0052cc] bg-blue-50 rounded px-2.5 py-1 focus:outline-none"
               >
                 <option value="MULTIPLE_CHOICE">Trắc nghiệm 4 lựa chọn</option>
                 <option value="TRUE_FALSE">Đúng / Sai (True / False)</option>
@@ -348,7 +415,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               {currentQ.options.slice(0, 2).map((opt, idx) => (
                 <div
                   key={opt.id}
-                  className={`${trueFalseConfigs[idx]?.bg} rounded-lg p-5 flex items-center justify-between shadow-md`}
+                  className={`${trueFalseConfigs[idx]?.bg} rounded-xl p-5 flex items-center justify-between shadow-md`}
                 >
                   <div className="flex items-center gap-4 text-white">
                     <span className="text-4xl font-black select-none">
@@ -376,7 +443,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               {currentQ.options.map((opt, idx) => (
                 <div
                   key={opt.id}
-                  className={`${optionColorConfigs[idx]?.bg} rounded-lg p-4 flex items-center gap-3 shadow-md min-h-[90px]`}
+                  className={`${optionColorConfigs[idx]?.bg} rounded-xl p-4 flex items-center gap-3 shadow-md min-h-[90px]`}
                 >
                   <span className="text-2xl text-white font-black select-none">
                     {optionColorConfigs[idx]?.icon}
@@ -410,4 +477,3 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
     </div>
   );
 }
-

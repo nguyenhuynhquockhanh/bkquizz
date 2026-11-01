@@ -1,55 +1,56 @@
 [
   {
-    "id": "quiz-web-tech-1",
+    "id": "quiz-bk-tech-1",
     "userId": "user_demo_01",
-    "title": "Thử tài Lập trình Web & Công nghệ (Có Ảnh & Đúng/Sai)",
-    "description": "Bộ câu hỏi trắc nghiệm kiểm tra kiến thức về React, JavaScript, HTML/CSS và Web Socket.",
+    "title": "Đấu trí Bách Khoa HCM - Lập trình Web & Mạng Máy Tính",
+    "description": "Bộ câu hỏi kiểm tra kiến thức về Web động HTTPS, Socket.IO, React và Mạng máy tính - ĐH Bách Khoa TP.HCM.",
     "coverImage": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80",
+    "showQuestionsOnPlayerScreen": true,
     "questions": [
       {
         "id": "q1",
         "type": "MULTIPLE_CHOICE",
-        "question": "Logo dưới đây thuộc về thư viện / framework nào của JavaScript?",
-        "imageUrl": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&auto=format&fit=crop&q=80",
+        "question": "Giao thức bảo mật HTTPS chuẩn sử dụng cổng mặc định (default port) nào trên Internet?",
+        "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80",
         "timeLimit": 15,
         "points": 1000,
         "options": [
-          { "id": 0, "text": "Vue.js", "isCorrect": false },
-          { "id": 1, "text": "React.js", "isCorrect": true },
-          { "id": 2, "text": "Angular", "isCorrect": false },
-          { "id": 3, "text": "Svelte", "isCorrect": false }
+          { "id": 0, "text": "Port 80", "isCorrect": false },
+          { "id": 1, "text": "Port 443", "isCorrect": true },
+          { "id": 2, "text": "Port 8080", "isCorrect": false },
+          { "id": 3, "text": "Port 22", "isCorrect": false }
         ]
       },
       {
         "id": "q2",
         "type": "TRUE_FALSE",
-        "question": "Giao thức WebSocket chỉ cho phép truyền dữ liệu một chiều từ Server về Client?",
-        "imageUrl": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80",
+        "question": "Trường Đại học Bách Khoa - ĐHQG-HCM (HCMUT) được thành lập từ năm 1957 (tiền thân là Trung tâm Kỹ thuật Quốc gia Phú Thọ)?",
+        "imageUrl": "",
         "timeLimit": 15,
         "points": 1000,
         "options": [
-          { "id": 0, "text": "ĐÚNG", "isCorrect": false },
-          { "id": 1, "text": "SAI (WebSocket là Full-Duplex 2 chiều)", "isCorrect": true }
+          { "id": 0, "text": "ĐÚNG", "isCorrect": true },
+          { "id": 1, "text": "SAI", "isCorrect": false }
         ]
       },
       {
         "id": "q3",
         "type": "MULTIPLE_CHOICE",
-        "question": "CSS Framework nào sử dụng phương pháp Utility-first (viết class trực tiếp trong HTML)?",
+        "question": "Giao thức nào cho phép truyền dữ liệu hai chiều thời gian thực (Full-Duplex) giữa Client và Server?",
         "imageUrl": "",
         "timeLimit": 15,
         "points": 1000,
         "options": [
-          { "id": 0, "text": "Tailwind CSS", "isCorrect": true },
-          { "id": 1, "text": "Bootstrap", "isCorrect": false },
-          { "id": 2, "text": "Ant Design", "isCorrect": false },
-          { "id": 3, "text": "Bulma", "isCorrect": false }
+          { "id": 0, "text": "HTTP/1.1", "isCorrect": false },
+          { "id": 1, "text": "WebSocket (Socket.IO)", "isCorrect": true },
+          { "id": 2, "text": "FTP", "isCorrect": false },
+          { "id": 3, "text": "DNS", "isCorrect": false }
         ]
       },
       {
         "id": "q4",
         "type": "TRUE_FALSE",
-        "question": "JavaScript là ngôn ngữ chạy đơn luồng (Single-threaded) nhưng xử lý bất đồng bộ nhờ Event Loop?",
+        "question": "Trong kiến trúc Single Deployment của dự án, cả React và Express/Socket.IO chạy chung trên cùng một domain HTTPS của Azure App Service?",
         "imageUrl": "",
         "timeLimit": 15,
         "points": 1000,

@@ -72,7 +72,7 @@ const io = new Server(httpServer, {
 
 const gameManager = new GameManager(io);
 
-// === AUTHENTICATION APIS (Đăng nhập/Đăng ký chuẩn thông thường) ===
+// === AUTHENTICATION APIS ===
 
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body;
@@ -120,13 +120,12 @@ app.post("/api/auth/register", (req, res) => {
   });
 });
 
-// === QUIZ APIS (Lọc theo người dùng quản lý) ===
+// === QUIZ APIS ===
 
 app.get("/api/quizzes", (req, res) => {
   quizzes = readQuizzes();
   const { userId } = req.query;
 
-  // Nếu có userId -> Trả về danh sách câu hỏi do người đó quản lý
   if (userId) {
     const userQuizzes = quizzes.filter((q) => q.userId === userId);
     return res.json(userQuizzes);
@@ -152,6 +151,7 @@ app.post("/api/quizzes", (req, res) => {
     coverImage:
       req.body.coverImage ||
       "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80",
+    showQuestionsOnPlayerScreen: req.body.showQuestionsOnPlayerScreen !== false,
     questions: req.body.questions || []
   };
   quizzes.unshift(newQuiz);
@@ -167,8 +167,11 @@ app.put("/api/quizzes/:id", (req, res) => {
   quizzes[index] = {
     ...quizzes[index],
     title: req.body.title || quizzes[index].title,
-    description: req.body.description || quizzes[index].description,
+    description: req.body.description !== undefined ? req.body.description : quizzes[index].description,
     coverImage: req.body.coverImage || quizzes[index].coverImage,
+    showQuestionsOnPlayerScreen: req.body.showQuestionsOnPlayerScreen !== undefined
+      ? req.body.showQuestionsOnPlayerScreen
+      : (quizzes[index].showQuestionsOnPlayerScreen !== false),
     questions: req.body.questions || quizzes[index].questions
   };
   saveQuizzes(quizzes);
@@ -182,6 +185,11 @@ app.delete("/api/quizzes/:id", (req, res) => {
   res.json({ message: "Đã xóa bộ đề thành công!" });
 });
 
+// Match history API for dashboard
+app.get("/api/admin/history", (req, res) => {
+  res.json(matchHistory);
+});
+
 app.get("/api/reports/:pin/export", (req, res) => {
   const { pin } = req.params;
   const buffer = gameManager.exportExcelReport(pin);
@@ -189,7 +197,7 @@ app.get("/api/reports/:pin/export", (req, res) => {
     return res.status(404).json({ error: "Không tìm thấy dữ liệu trận đấu hoặc phòng chưa kết thúc!" });
   }
 
-  res.setHeader("Content-Disposition", `attachment; filename=Bao_Cao_Kahoot_Room_${pin}.xlsx`);
+  res.setHeader("Content-Disposition", `attachment; filename=Bao_Cao_BKQuiz_Room_${pin}.xlsx`);
   res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.send(buffer);
 });
@@ -220,7 +228,8 @@ io.on("connection", (socket) => {
       pin: room.pin,
       quizTitle: quiz.title,
       totalQuestions: quiz.questions.length,
-      coverImage: quiz.coverImage
+      coverImage: quiz.coverImage,
+      showQuestionsOnPlayerScreen: room.showQuestionsOnPlayerScreen
     });
   });
 
@@ -234,7 +243,8 @@ io.on("connection", (socket) => {
     socket.emit("join_success", {
       pin,
       player: result.player,
-      quizTitle: result.room.quiz.title
+      quizTitle: result.room.quiz.title,
+      showQuestionsOnPlayerScreen: result.room.showQuestionsOnPlayerScreen
     });
 
     io.to(result.room.hostSocketId).emit("player_joined", {
@@ -283,6 +293,5 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`Kahoot Clone Realtime Server running on http://localhost:${PORT}`);
+  console.log(`BKQuiz Realtime Server running on http://localhost:${PORT}`);
 });
-
