@@ -111,7 +111,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
                     className="h-14 rounded-xl bg-[#f5c542] hover:bg-[#ffcf4d] text-[#002855] font-black text-xs uppercase flex flex-col items-center justify-center gap-1 shadow-sm transition-all hover:shadow"
                   >
                     <LogIn className="w-5 h-5 text-[#002855]" />
-                    <span>Tài khoản HCMUT</span>
+                    <span>Đăng nhập</span>
                   </button>
                 )}
               </div>
@@ -187,7 +187,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
         ) : (
           <div className="mt-4 text-center">
             <span className="text-xs text-gray-500">
-              Cổng dịch vụ xác thực tập trung CAS • Đại học Bách Khoa TP.HCM
+              Đăng ký tài khoản BKQuiz bằng tên đăng nhập hoặc email của bạn.
             </span>
           </div>
         )}

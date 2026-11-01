@@ -1,3 +1,4 @@
+import { downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import confetti from "canvas-confetti";
@@ -21,7 +22,6 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
   const joinUrl = `${window.location.origin}/?pin=${roomData?.pin}`;
 
   const triggerConfetti = () => {
@@ -126,7 +126,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
 
   const handleShowLeaderboard = () => socket.emit("show_leaderboard", { pin: roomData?.pin });
   const handleNextQuestion = () => socket.emit("next_question", { pin: roomData?.pin });
-  const handleExportExcel = () => window.open(`${backendUrl}/api/reports/${roomData?.pin}/export`, "_blank");
+  const handleExportExcel = () => downloadReport(roomData?.pin).catch((err) => alert(err.message));
 
   const toggleSound = () => {
     const muted = sounds.toggleMute();

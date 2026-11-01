@@ -1,107 +1,66 @@
-# BKQuiz (ClassPlay v2.0) - Nền tảng Trắc nghiệm Trực tuyến Real-time ĐH Bách Khoa TP.HCM (HCMUT)
+# BKQuiz
 
-Ứng dụng trò chơi học tập và thi trắc nghiệm tương tác thời gian thực phong cách Kahoot! được thiết kế theo đúng mẫu giao diện các hệ thống thực tế của **Trường Đại học Bách Khoa - ĐHQG-HCM (HCMUT)** bao gồm:
-- **Cổng MyBK** (`mybk.hcmut.edu.vn`): Logo khối lập phương 3D BK TP.HCM, bố cục trung tâm, các nút thẻ vàng thương hiệu.
-- **Cổng Dịch vụ Xác thực Tập trung CAS SSO** (`sso.hcmut.edu.vn`): Giao diện đăng nhập chuẩn trường, banner xanh đậm `#002060`, form thông báo và hướng dẫn kỹ thuật.
-- **Cổng Học tập BK-LMS** (`lms.hcmut.edu.vn`): Thanh điều hướng cobalt blue `#0275b8`, quản lý khóa học và bộ đề học thuật.
+Website trắc nghiệm tương tác, dùng React/Vite/Tailwind và Express/Socket.IO. Dự án ghi nhận nguồn tham khảo ban đầu là [ClassQuiz](https://github.com/mawoka-myblock/ClassQuiz); bản hiện tại dùng kiến trúc React + Node.js riêng.
 
-Dự án được xây dựng bằng **React (Vite) + Tailwind CSS** và **Node.js (Express + Socket.IO)**, đáp ứng đầy đủ yêu cầu:
-> **Make a dynamic website based on HTTPS (Port 443)** — Triển khai Web Động trên nền tảng HTTPS bảo mật đám mây (Azure App Service).
+## Đăng nhập và phân quyền
 
----
+- Chọn **Đăng nhập** ở trang chủ hoặc góc phải. Dùng tên đăng nhập hoặc email bất kỳ đã đăng ký với BKQuiz; không yêu cầu email HCMUT và không kết nối SSO/CAS của trường.
+- Tài khoản đăng ký mới luôn có quyền `user`, kể cả khi client tự gửi `role: admin`.
+- Tài khoản quản trị tạm: tên đăng nhập `admin`; mật khẩu khởi tạo được cung cấp riêng trong cuộc trao đổi triển khai.
+- Chỉ tài khoản `admin` thấy menu **Quản trị**. Truy cập `/admin` hoặc API trực tiếp không bỏ qua kiểm tra quyền.
 
-## 📌 Nguồn Gốc & Sự Kế Thừa Dự Án
+### Thêm admin
 
-Dự án được kế thừa và phát triển từ mã nguồn mở [ClassQuiz](https://github.com/mawoka-myblock/ClassQuiz). ClassQuiz gốc sử dụng SvelteKit + Python FastAPI + cấu trúc Docker phức tạp (Meilisearch, MinIO, Caddy) rất khó triển khai thực tế. 
+1. Đăng nhập tài khoản admin.
+2. Mở **Quản trị → Quản lý Người dùng → Thêm tài khoản mới**.
+3. Nhập họ tên, tên đăng nhập/email và mật khẩu, chọn **Vai trò → Quản trị viên**, rồi **Lưu Tài Khoản**.
+4. Với tài khoản đã tồn tại, đổi ô **Vai trò** trong bảng thành **Quản trị viên**.
 
-Trong dự án **BKQuiz v2.0**, toàn bộ mã nguồn đã được **viết lại và cải tiến hơn 55%**:
-1. **Kiến trúc Single-Stack**: Chuyển hoàn toàn sang **React + Node.js (Express + Socket.IO)**, tinh giản kiến trúc Room-based in-memory, cho phép frontend và backend cùng chạy trên một cổng và triển khai gọn gàng với HTTPS trên Azure App Service.
-2. **Cổng Quản Trị Hệ Thống Toàn Diện (Admin Portal - `/admin`)**: Bổ sung trang quản trị cấp cao giúp giám sát các phòng thi thời gian thực, quản lý phân quyền tài khoản (Admin/Giảng viên), kiểm duyệt toàn bộ ngân hàng câu hỏi và xuất báo cáo kết quả thi.
-3. **Cá nhân hóa nhận diện ĐH Bách Khoa TP.HCM**: Logo khối 3D đặc trưng BK TP.HCM, bảng màu Bách Khoa thực tế (`#002060`, `#0275b8`, `#f5c542`), giao diện tối giản, chuyên nghiệp và chuẩn mực học thuật.
-4. **Đổi mới tính năng tương tác**: Tùy chọn hiển thị nội dung câu hỏi trên thiết bị thí sinh (Player Screen Sync), hỗ trợ câu hỏi Đúng/Sai và ảnh minh họa, Streak Combo thưởng điểm, Power-ups (50:50, x2 điểm), Dynamic QR Code và xuất báo cáo Excel (.xlsx).
+Không thể tự xóa hay tự hạ quyền tài khoản đang đăng nhập. Tài khoản thường chỉ quản lý đề và báo cáo của mình; admin có thể quản lý toàn hệ thống. Người tham gia bằng PIN không bắt buộc đăng nhập.
 
----
+### Lưu trữ và phiên đăng nhập
 
-## 📊 Bảng Chứng Minh Tính Năng Mới & Tinh Chỉnh (> 55% So Với Bản Gốc)
+- Tài khoản nằm trong `server/src/data/users.json`, gồm `id`, `name`, `email` (tên đăng nhập hoặc email), `role`, `passwordHash`, `createdAt`.
+- Mật khẩu dùng scrypt với salt riêng; mật khẩu rõ từ dữ liệu cũ được chuyển đổi khi server khởi động.
+- Token ngẫu nhiên lưu trong sessionStorage của tab; server xác thực token và đọc lại quyền hiện tại với mỗi yêu cầu. Phiên hết hạn sau 12 giờ, bị thu hồi khi đăng xuất, và mất khi server khởi động lại.
+- Dữ liệu JSON mặc định nằm cùng mã nguồn và có thể bị thay thế khi deploy. Muốn giữ dữ liệu, đặt `DATA_DIR` trỏ tới thư mục lưu trữ bền vững, có sẵn `users.json` và `quizzes.json`. Không ghi đè dữ liệu đang dùng bằng file seed mỗi lần deploy.
+- Phòng thi và lịch sử trận đang lưu trong bộ nhớ; chưa hỗ trợ nhiều server instance dùng chung phiên/phòng.
 
-| Hạng mục | Bản gốc ClassQuiz | Bản cải tiến BKQuiz v2.0 (Dự án này) | Tỉ lệ đóng góp mới |
-| :--- | :--- | :--- | :--- |
-| **Công nghệ & Kiến trúc** | SvelteKit + Python FastAPI + Docker nhiều tầng (Meilisearch, MinIO, Caddy). Nặng nề, khó triển khai. | **Viết mới hoàn toàn sang React + Node.js (Socket.IO)**. Kiến trúc Room-based tối ưu hóa RAM, triển khai Single Service trực tiếp trên Azure Web Apps với HTTPS chuẩn (Port 443). | **15%** |
-| **Cổng Quản Trị Admin (`/admin`)** | Không có trang quản trị trung tâm độc lập. | **Xây dựng Cổng Admin hoàn chỉnh**: Giám sát phòng thi live qua Socket.IO, quản trị danh sách người dùng (CRUD), quản lý toàn bộ ngân hàng đề thi, theo dõi thông số mạng HTTPS 443 và uptime server. | **10%** |
-| **Giao diện chuẩn thực tế Bách Khoa** | Giao diện tiếng Anh chung chung, tông màu tím đơn sắc. | **Chuẩn hóa theo các hệ thống thực tế của HCMUT**: Tích hợp logo 3D BK TP.HCM (`mybk.hcmut.edu.vn`), cổng đăng nhập CAS SSO (`sso.hcmut.edu.vn`), thanh điều hướng LMS (`lms.hcmut.edu.vn`). | **10%** |
-| **Hiển thị câu hỏi trên máy thí sinh (Player Screen)** | Không có (người chơi chỉ thấy các khối màu, bắt buộc nhìn máy chiếu Host). | **Tích hợp nút tùy chọn cho người tạo đề**: Cho phép bật/tắt hiển thị toàn bộ nội dung câu hỏi, ảnh minh họa và chữ đáp án ngay trên màn hình điện thoại/laptop của thí sinh. | **8%** |
-| **Mã QR Tham gia Nhanh** | Chỉ có mã PIN số, người chơi phải gõ tay thủ công. | Tích hợp **Dynamic QR Code** trên màn hình Host. Người chơi chỉ cần quét camera điện thoại là tự động vào phòng với PIN được điền sẵn. | **5%** |
-| **Hệ thống Streak & Combo** | Tính điểm cố định qua từng câu độc lập. | **Streak Bonus**: Người chơi trả lời đúng liên tiếp sẽ được cộng thêm điểm combo (+100, +250, +500) và hiển thị biểu tượng ngọn lửa 🔥 kịch tính. | **5%** |
-| **Cơ chế Trợ giúp (Power-ups)** | Không có vật phẩm trợ giúp. | Tích hợp 2 thẻ trợ giúp chiến thuật: **50:50** (loại bỏ 2 đáp án sai ngẫu nhiên) và **x2 Điểm** (nhân đôi số điểm nếu câu đó trả lời đúng). | **4%** |
-| **Báo Cáo Điểm Excel (.xlsx)** | Không hỗ trợ xuất file Excel điểm lớp. | **Xuất file báo cáo Excel tự động**: Thống kê bảng xếp hạng điểm của từng sinh viên, tỉ lệ chọn đúng/sai của từng câu hỏi để giảng viên phân tích bài học. | **5%** |
+## Chạy local
 
-> **Tổng mức độ cải tiến & viết mới: > 55%** (Đáp ứng vượt mức yêu cầu cải tiến 30% của đồ án môn học).
+Cần Node.js 22.12+ hoặc 24.
 
----
-
-## 🛠️ Cổng Quản Trị Hệ Thống (Admin Portal)
-
-Truy cập tại menu **"Cổng Admin"** trên Navbar hoặc đường dẫn `/admin`:
-1. **Tổng quan hệ thống (System Analytics)**: Theo dõi trực quan tổng số bộ đề, tổng số câu hỏi, tổng số tài khoản và thông số mạng an toàn `HTTPS (Port 443)`.
-2. **Giám sát phòng thi thời gian thực (Live Socket.IO Rooms)**: Xem danh sách các phòng thi đang mở, mã PIN, số lượng thí sinh đang thi và tiến độ câu hỏi.
-3. **Quản lý người dùng (User Management)**: Xem danh sách giảng viên / quản trị viên, thêm tài khoản mới, xóa tài khoản.
-4. **Quản trị ngân hàng đề thi**: Tìm kiếm, lọc và xóa các bộ đề trên toàn hệ thống.
-5. **Lịch sử & Xuất báo cáo**: Tải file Excel báo cáo kết quả thi của từng phòng.
-
----
-
-## 🚀 Hướng Dẫn Chạy Dự Án Trên Máy Cá Nhân (Local Development)
-
-### Yêu cầu môi trường
-- Node.js version 22.x hoặc 24.x LTS.
-- Trình duyệt Chrome / Edge / Safari / Firefox hiện đại.
-
-### 1. Khởi động Backend Server
-```bash
-cd server
-npm install
-npm run dev
-# Server lắng nghe tại: http://localhost:4000
-```
-
-### 2. Khởi động Frontend Client
-```bash
-cd client
-npm install
-npm run dev -- --host
-# Truy cập giao diện tại: http://localhost:5173
-```
-
-> **Mẹo thử nghiệm**:
-> - Mở Tab 1 làm **Host**: Chọn bộ đề và bấm "Mở Phòng".
-> - Mở Tab 2 làm **Thí sinh**: Nhập mã PIN và Biệt danh để vào thi đấu.
-> - Bấm vào **"Cổng Admin"** trên thanh menu để vào trang quản trị hệ thống.
-
----
-
-## 🌐 Triển Khai Đơn Lẻ Lên Azure App Service (HTTPS - Port 443)
-
-Ứng dụng đáp ứng chuẩn **Dynamic Website based on HTTPS (443)** nhờ chạy cả React và Express/Socket.IO trên cùng một dịch vụ đám mây Azure Web App với SSL/TLS tự động:
-
-### 1. Kiểm tra build trọn gói trước khi deploy
-```bash
+```sh
 npm install
 npm run build
 npm start
 ```
-Truy cập `http://localhost:4000`. Lệnh `npm run build` sẽ tự động build `client/dist` và server Express sẽ đóng vai trò serve ứng dụng tĩnh kết hợp socket thời gian thực.
 
-### 2. Cấu hình trên Azure Portal
-1. **Tạo Web App**:
-   - Publish: **Code**
-   - Runtime stack: **Node 24 LTS** (hoặc Node 22)
-   - Operating System: **Linux**
-2. **Cấu hình Deployment Center**:
-   - Kết nối repository GitHub: `https://github.com/nguyenhuynhquockhanh/bkquizz.git`
-   - Nhánh: `main`
-   - Quá trình deploy sẽ được tự động kích hoạt thông qua GitHub Actions (`.github/workflows/main_bkquizz.yml`).
-3. **Application Settings (Environment variables)**:
-   - `NODE_ENV=production`
-   - `PORT=8080` (hoặc cổng do Azure tự động cấp phát)
-4. **Startup Command**: `npm start`.
-5. **Kiểm tra HTTPS**: Mọi kết nối Socket.IO, RESTful API và static files đều tự động định tuyến an toàn qua HTTPS (Port 443).
+Mở `http://localhost:4000`. Để phát triển frontend riêng:
+
+```sh
+cd client
+npm ci
+npm run dev
+```
+
+Vite proxy `/api` và `/socket.io` tới backend cổng 4000. Mặc định frontend và API dùng cùng origin; token xác thực được gửi trong Authorization header và Socket.IO handshake.
+
+## Kiểm tra
+
+```sh
+npm test --prefix server
+npm run build --prefix client
+```
+
+Test API tạo thư mục dữ liệu tạm, kiểm tra đăng nhập, quyền user/admin, chống tự nâng quyền, sở hữu đề, đổi quyền, xóa tài khoản và thu hồi phiên. Không sửa dữ liệu sử dụng thực tế.
+
+## Triển khai HTTPS 443 trên Azure
+
+Workflow `.github/workflows/main_bkquizz.yml` build và deploy khi push lên `main`. Startup command: `npm start`. Azure tiếp nhận HTTPS ở cổng 443, chuyển tiếp tới cổng HTTP nội bộ do `PORT` quy định.
+
+Bật HTTPS Only trên Azure và kiểm tra URL triển khai thực tế: chứng chỉ hợp lệ, HTTP chuyển sang HTTPS, API và Socket.IO hoạt động trên cùng HTTPS origin. Build thành công hoặc chữ HTTPS trên giao diện không thay thế việc kiểm tra TLS thực tế.
+
+## Logo
+
+Logo có nền giữa và viền trắng do chủ repo cung cấp; component và favicon dùng chung `client/public/hcmut-mark.svg`. Xem `client/public/BRANDING.md` để biết cách hiển thị và nguồn tham khảo.

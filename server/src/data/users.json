@@ -3,7 +3,16 @@
     "id": "user_demo_01",
     "name": "Trần Duy Trường",
     "email": "demo@kahoot.com",
-    "password": "password123",
-    "createdAt": "2026-10-29T00:00:00.000Z"
+    "createdAt": "2026-10-29T00:00:00.000Z",
+    "passwordHash": "scrypt:0b64f81de2dd82c2f957da352cd345bf:528c586337855e2ac9dabfb83bfc4d24b8265412fae2a87eb8ece4bc5ad4ced80a851e9f1c080a4cd94d6098f9cf9cf5249a5f184c77a7c228f7b14813909261",
+    "role": "user"
+  },
+  {
+    "id": "user_admin_01",
+    "name": "Quản trị viên",
+    "email": "admin",
+    "passwordHash": "scrypt:d1ed1767435c3d5052a5b907cef9884c:0246849d4700e3c9d9948596aeb4ec4bb93a8c24483c3e3fc2e903a0717a2421cb2d6972dc49e381f129db38c8a0dd5db96f9c1749d607907957ffc673ccadd6",
+    "role": "admin",
+    "createdAt": "2026-11-01T12:55:42.089Z"
   }
 ]

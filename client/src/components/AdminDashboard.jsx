@@ -1,8 +1,9 @@
+import { apiFetch as fetch, downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { Users, BookOpen, HelpCircle, Activity, ShieldCheck, Download, Trash2, Plus, Search, RefreshCw, Server, CheckCircle2 } from "lucide-react";
 import BKLogo from "./BKLogo";
 
-export default function AdminDashboard({ onBack }) {
+export default function AdminDashboard({ onBack, currentUser }) {
   const [activeTab, setActiveTab] = useState("overview"); // overview, quizzes, users, live, history
   const [stats, setStats] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
@@ -17,6 +18,8 @@ export default function AdminDashboard({ onBack }) {
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
+
+  const [newUserRole, setNewUserRole] = useState("user");
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -87,7 +90,8 @@ export default function AdminDashboard({ onBack }) {
         body: JSON.stringify({
           name: newUserName.trim(),
           email: newUserEmail.trim(),
-          password: newUserPassword.trim()
+          password: newUserPassword,
+          role: newUserRole
         })
       });
 
@@ -96,6 +100,7 @@ export default function AdminDashboard({ onBack }) {
         setNewUserName("");
         setNewUserEmail("");
         setNewUserPassword("");
+        setNewUserRole("user");
         setIsAddingUser(false);
         fetchAdminData();
       } else {
@@ -105,6 +110,16 @@ export default function AdminDashboard({ onBack }) {
     } catch (_err) {
       alert("Lỗi kết nối máy chủ!");
     }
+  };
+
+  const changeRole = async (id, role) => {
+    try {
+      const response = await fetch(`${backendUrl}/api/admin/users/${id}/role`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role })
+      });
+      if (!response.ok) { const data = await response.json(); throw new Error(data.error); }
+      await fetchAdminData();
+    } catch (err) { alert(err.message || 'Không thể đổi quyền.'); }
   };
 
   const filteredQuizzes = quizzes.filter(
@@ -123,7 +138,7 @@ export default function AdminDashboard({ onBack }) {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-black text-[#002855]">
-                  Cổng Quản Trị Hệ Thống BKQuiz (Admin Portal)
+                  Quản trị BKQuiz
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-blue-100 text-[#0052cc]">
                   HCMUT
@@ -176,7 +191,7 @@ export default function AdminDashboard({ onBack }) {
 
           <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-black uppercase text-gray-400 block">Người dùng / Giảng viên</span>
+              <span className="text-[11px] font-black uppercase text-gray-400 block">Người dùng</span>
               <span className="text-3xl font-black text-[#002855]">{stats?.totalUsers || users.length}</span>
             </div>
             <div className="w-11 h-11 rounded-lg bg-green-50 text-[#26890c] flex items-center justify-center">
@@ -208,7 +223,7 @@ export default function AdminDashboard({ onBack }) {
                 : "border-transparent text-gray-400 hover:text-gray-700"
             }`}
           >
-            Hệ thống & Mạng (HTTPS 443)
+            Tổng quan
           </button>
 
           <button
@@ -263,7 +278,7 @@ export default function AdminDashboard({ onBack }) {
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                 <ShieldCheck className="w-5 h-5 text-green-600" />
                 <h3 className="font-black text-base text-gray-900">
-                  Chứng Nhận Đề Tài: Web Động HTTPS (Port 443)
+                  Thông tin hệ thống
                 </h3>
               </div>
 
@@ -271,7 +286,7 @@ export default function AdminDashboard({ onBack }) {
                 <div className="flex justify-between py-2 border-b border-gray-100">
                   <span className="font-bold">Giao thức an toàn:</span>
                   <span className="font-black text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
-                    HTTPS (Port 443) - SSL/TLS Active
+                    {window.location.protocol === 'https:' ? 'HTTPS' : 'HTTP'} · Cổng {window.location.port || (window.location.protocol === 'https:' ? '443' : '80')}
                   </span>
                 </div>
                 <div className="flex justify-between py-2 border-b border-gray-100">
@@ -312,7 +327,7 @@ export default function AdminDashboard({ onBack }) {
                   <span className="font-black text-[#002855] block mb-1">
                     Khả năng mở rộng phòng thi:
                   </span>
-                  Hệ thống không giới hạn cứng số lượng người chơi. Được tối ưu hóa cho quy mô giảng đường 50 – 200 thí sinh đồng thời.
+                  Theo dõi số phòng và người tham gia tại mục Phòng Live. Dữ liệu được cập nhật khi bấm Làm mới.
                 </div>
 
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -411,7 +426,7 @@ export default function AdminDashboard({ onBack }) {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-black text-base text-[#002855]">Danh Sách Tài Khoản Giảng Viên / Quản Trị</h3>
+                <h3 className="font-black text-base text-[#002855]">Danh sách người dùng</h3>
                 <p className="text-gray-500 text-xs">Quản lý phân quyền và cấp tài khoản sử dụng hệ thống BKQuiz.</p>
               </div>
 
@@ -440,9 +455,9 @@ export default function AdminDashboard({ onBack }) {
                     className="bg-white border border-gray-300 rounded px-3 py-1.5 text-xs font-bold"
                   />
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="email@hcmut.edu.vn"
+                    placeholder="Tên đăng nhập hoặc email"
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
                     className="bg-white border border-gray-300 rounded px-3 py-1.5 text-xs font-bold"
@@ -450,12 +465,19 @@ export default function AdminDashboard({ onBack }) {
                   <input
                     type="password"
                     required
-                    placeholder="Mật khẩu khởi tạo..."
+                    placeholder="Mật khẩu (ít nhất 6 ký tự)"
+                    minLength={6}
                     value={newUserPassword}
                     onChange={(e) => setNewUserPassword(e.target.value)}
                     className="bg-white border border-gray-300 rounded px-3 py-1.5 text-xs font-bold"
                   />
                 </div>
+                <label className="block text-sm font-bold">Vai trò
+                  <select value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)} className="ml-3 border rounded p-2 bg-white">
+                    <option value="user">Người dùng</option>
+                    <option value="admin">Quản trị viên</option>
+                  </select>
+                </label>
                 <div className="flex justify-end gap-2">
                   <button
                     type="button"
@@ -491,19 +513,17 @@ export default function AdminDashboard({ onBack }) {
                       <td className="py-3 px-4 font-black text-[#002855]">{u.name}</td>
                       <td className="py-3 px-4 text-gray-700">{u.email}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          u.role.includes("Admin")
-                            ? "bg-purple-100 text-purple-800"
-                            : "bg-blue-100 text-[#0052cc]"
-                        }`}>
-                          {u.role}
-                        </span>
+                        <select aria-label={`Vai trò của ${u.name}`} value={u.role} disabled={u.id === currentUser.id}
+                          onChange={(e) => changeRole(u.id, e.target.value)} className="border rounded px-2 py-1 bg-white disabled:bg-gray-100">
+                          <option value="user">Người dùng</option><option value="admin">Quản trị viên</option>
+                        </select>
                       </td>
                       <td className="py-3 px-4 text-xs text-gray-500">
                         {new Date(u.createdAt).toLocaleDateString("vi-VN")}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <button
+                          disabled={u.id === currentUser.id}
                           onClick={() => handleDeleteUser(u.id, u.name)}
                           className="p-1.5 rounded bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
                         >
@@ -590,15 +610,13 @@ export default function AdminDashboard({ onBack }) {
                           {new Date(h.endedAt).toLocaleString("vi-VN")}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <a
-                            href={`${backendUrl}/api/reports/${h.pin}/export`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={() => downloadReport(h.pin).catch((err) => alert(err.message))}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-black uppercase bg-[#26890c] text-white hover:bg-[#1b6308] shadow-sm"
                           >
                             <Download className="w-3.5 h-3.5" />
                             Tải Excel (.xlsx)
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}

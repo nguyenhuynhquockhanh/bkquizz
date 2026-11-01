@@ -7,18 +7,38 @@ import QuizEditor from "./components/QuizEditor";
 import MyQuizzes from "./components/MyQuizzes";
 import AdminDashboard from "./components/AdminDashboard";
 import LoginModal from "./components/LoginModal";
+import { apiFetch, getToken, setToken } from './services/api';
 import { socket } from "./services/socket";
 
 export default function App() {
   const [currentView, setCurrentView] = useState("home"); // home, host, player, editor, my-quizzes, admin
   const [roomData, setRoomData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem("bkquiz_user") || localStorage.getItem("kahoot_user");
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const clearUser = () => { setCurrentUser(null); setCurrentView('home'); };
+    const refresh = async () => {
+      try {
+        if (!getToken()) return;
+        const response = await apiFetch((import.meta.env.VITE_BACKEND_URL || '') + '/api/auth/me');
+        if (response.ok && active) setCurrentUser(await response.json());
+      } catch { if (active) setCurrentUser(null); }
+      finally { if (active) setAuthLoading(false); }
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('bkquiz:logged-out', clearUser);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('bkquiz:logged-out', clearUser);
+    };
+  }, []);
 
   useEffect(() => {
     // Kiểm tra nếu URL có path /admin
@@ -36,6 +56,7 @@ export default function App() {
       setCurrentView("player");
     });
 
+    socket.on('host_error', ({ message }) => alert(message));
     socket.on("join_error", ({ message }) => {
       alert(message || "Không thể tham gia phòng!");
     });
@@ -44,6 +65,7 @@ export default function App() {
       socket.off("room_created");
       socket.off("join_success");
       socket.off("join_error");
+      socket.off("host_error");
     };
   }, []);
 
@@ -60,16 +82,22 @@ export default function App() {
     setPlayerData(null);
     setEditingQuiz(null);
     setCurrentView("home");
-    window.history.replaceState({}, document.title, window.location.pathname);
+    window.history.replaceState({}, document.title, "/");
   };
 
   const handleLoginSuccess = (user) => {
-    setCurrentUser(user);
-    localStorage.setItem("bkquiz_user", JSON.stringify(user));
-    setCurrentView("my-quizzes");
+    const { token, ...profile } = user;
+    setToken(token);
+    setCurrentUser(profile);
+    socket.disconnect().connect();
+    setCurrentView(profile.role === 'admin' ? 'admin' : 'my-quizzes');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await apiFetch((import.meta.env.VITE_BACKEND_URL || '') + '/api/auth/logout', { method: 'POST' }); }
+    catch { alert('Không thể kết nối máy chủ để thu hồi phiên đăng nhập.'); }
+    setToken(null);
+    socket.disconnect().connect();
     setCurrentUser(null);
     localStorage.removeItem("bkquiz_user");
     localStorage.removeItem("kahoot_user");
@@ -100,6 +128,12 @@ export default function App() {
       )}
 
       <main className="flex-1 flex flex-col">
+        {currentView === 'admin' && currentUser?.role !== 'admin' && (
+          <div className="p-8 text-center space-y-4">
+            <p>{authLoading ? 'Đang kiểm tra đăng nhập…' : 'Khu vực này chỉ dành cho quản trị viên.'}</p>
+            {!authLoading && !currentUser && <button onClick={() => setIsLoginModalOpen(true)} className="bg-[#0275b8] text-white rounded px-5 py-2">Đăng nhập</button>}
+          </div>
+        )}
         {currentView === "home" && (
           <Home
             onJoinGame={handleJoinGame}
@@ -120,8 +154,9 @@ export default function App() {
         )}
 
         {/* Cổng Quản Trị Hệ Thống Admin */}
-        {currentView === "admin" && (
+        {currentView === "admin" && currentUser?.role === "admin" && (
           <AdminDashboard
+            currentUser={currentUser}
             onBack={() => setCurrentView(currentUser ? "my-quizzes" : "home")}
           />
         )}

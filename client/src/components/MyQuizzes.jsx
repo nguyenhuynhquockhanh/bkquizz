@@ -1,3 +1,4 @@
+import { apiFetch as fetch, downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Edit, Trash2, Play, Download, BookOpen, HelpCircle, Monitor } from "lucide-react";
 
@@ -17,7 +18,7 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
 
       const [resQuizzes, resHistory] = await Promise.all([
         fetch(url).then((r) => r.json()).catch(() => []),
-        fetch(`${backendUrl}/api/admin/history`).then((r) => r.json()).catch(() => [])
+        fetch(`${backendUrl}/api/history`).then((r) => r.json()).catch(() => [])
       ]);
       setQuizzes(Array.isArray(resQuizzes) ? resQuizzes : []);
       setHistory(Array.isArray(resHistory) ? resHistory : []);
@@ -253,15 +254,13 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
                           {new Date(h.endedAt).toLocaleString("vi-VN")}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <a
-                            href={`${backendUrl}/api/reports/${h.pin}/export`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={() => downloadReport(h.pin).catch((err) => alert(err.message))}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded font-black text-xs uppercase bg-[#26890c] text-white hover:bg-[#1b6308] shadow-sm"
                           >
                             <Download className="w-3.5 h-3.5" />
                             Tải Excel (.xlsx)
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))}

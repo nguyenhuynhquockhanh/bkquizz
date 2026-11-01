@@ -8,12 +8,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { GameManager } from "./gameManager.js";
 
+import { createAuth, publicUser, verifyPassword } from './auth.js';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const DATA_FILE = path.join(__dirname, "data", "quizzes.json");
-const USERS_FILE = path.join(__dirname, "data", "users.json");
+const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DATA_FILE = path.join(dataDir, 'quizzes.json');
+const USERS_FILE = path.join(dataDir, 'users.json');
 
 const app = express();
 const httpServer = createServer(app);
@@ -34,11 +37,7 @@ function readQuizzes() {
 }
 
 function saveQuizzes(quizzes) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(quizzes, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Lỗi ghi quizzes.json:", err);
-  }
+  fs.writeFileSync(DATA_FILE, JSON.stringify(quizzes, null, 2), "utf-8");
 }
 
 function readUsers() {
@@ -53,11 +52,7 @@ function readUsers() {
 }
 
 function saveUsers(users) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Lỗi ghi users.json:", err);
-  }
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
 }
 
 let quizzes = readQuizzes();
@@ -72,53 +67,32 @@ const io = new Server(httpServer, {
 
 const gameManager = new GameManager(io);
 
+const auth = createAuth(readUsers, saveUsers);
+const { requireUser, requireAdmin } = auth;
+const canManage = (user, quiz) => user.role === 'admin' || quiz.userId === user.id;
+
 // === AUTHENTICATION APIS ===
-
-app.post("/api/auth/login", (req, res) => {
+app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
-  const users = readUsers();
-  const user = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: "Email hoặc mật khẩu không chính xác!" });
+  const account = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const user = readUsers().find((u) => u.email.toLowerCase() === account);
+  if (!user || !verifyPassword(password, user.passwordHash)) {
+    return res.status(401).json({ error: 'Tài khoản hoặc mật khẩu không chính xác.' });
   }
-
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email
-  });
+  res.json(auth.issue(user));
 });
-
-app.post("/api/auth/register", (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "Vui lòng nhập đầy đủ họ tên, email và mật khẩu!" });
-  }
-
-  const users = readUsers();
-  const existing = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
-  if (existing) {
-    return res.status(400).json({ error: "Email này đã được đăng ký tài khoản!" });
-  }
-
-  const newUser = {
-    id: `user_${Date.now()}`,
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    password: password.trim(),
-    createdAt: new Date().toISOString()
-  };
-
-  users.push(newUser);
-  saveUsers(users);
-
-  res.status(201).json({
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email
-  });
+app.post('/api/auth/register', (req, res) => {
+  const result = auth.createUser(req.body, 'user');
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json(auth.issue(result.user));
 });
+app.get('/api/auth/me', requireUser, (req, res) => res.json(publicUser(req.user)));
+app.post('/api/auth/logout', requireUser, (req, res) => {
+  auth.revoke(req.token);
+  res.json({ message: 'Đã đăng xuất.' });
+});
+app.use('/api/admin', requireUser, requireAdmin);
+app.use('/api/quizzes', requireUser);
 
 // === QUIZ APIS ===
 
@@ -127,17 +101,19 @@ app.get("/api/quizzes", (req, res) => {
   const { userId } = req.query;
 
   if (userId) {
-    const userQuizzes = quizzes.filter((q) => q.userId === userId);
+    const ownerId = req.user.role === 'admin' ? userId : req.user.id;
+    const userQuizzes = quizzes.filter((q) => q.userId === ownerId);
     return res.json(userQuizzes);
   }
 
-  res.json(quizzes);
+  res.json(req.user.role === 'admin' ? quizzes : quizzes.filter((q) => q.userId === req.user.id));
 });
 
 app.get("/api/quizzes/:id", (req, res) => {
   quizzes = readQuizzes();
   const quiz = quizzes.find((q) => q.id === req.params.id);
   if (!quiz) return res.status(404).json({ error: "Không tìm thấy bộ đề!" });
+  if (!canManage(req.user, quiz)) return res.status(403).json({ error: 'Bạn không có quyền xem bộ đề này.' });
   res.json(quiz);
 });
 
@@ -145,7 +121,7 @@ app.post("/api/quizzes", (req, res) => {
   quizzes = readQuizzes();
   const newQuiz = {
     id: `quiz_${Date.now()}`,
-    userId: req.body.userId || null,
+    userId: req.user.id,
     title: req.body.title || "Bộ câu hỏi mới",
     description: req.body.description || "",
     coverImage:
@@ -164,6 +140,7 @@ app.put("/api/quizzes/:id", (req, res) => {
   const index = quizzes.findIndex((q) => q.id === req.params.id);
   if (index === -1) return res.status(404).json({ error: "Không tìm thấy bộ đề để cập nhật!" });
 
+  if (!canManage(req.user, quizzes[index])) return res.status(403).json({ error: 'Bạn không có quyền sửa bộ đề này.' });
   quizzes[index] = {
     ...quizzes[index],
     title: req.body.title || quizzes[index].title,
@@ -180,6 +157,9 @@ app.put("/api/quizzes/:id", (req, res) => {
 
 app.delete("/api/quizzes/:id", (req, res) => {
   quizzes = readQuizzes();
+  const quiz = quizzes.find((q) => q.id === req.params.id);
+  if (!quiz) return res.status(404).json({ error: 'Không tìm thấy bộ đề.' });
+  if (!canManage(req.user, quiz)) return res.status(403).json({ error: 'Bạn không có quyền xóa bộ đề này.' });
   quizzes = quizzes.filter((q) => q.id !== req.params.id);
   saveQuizzes(quizzes);
   res.json({ message: "Đã xóa bộ đề thành công!" });
@@ -199,48 +179,33 @@ app.get("/api/admin/overview", (req, res) => {
     liveRoomsCount: liveRooms.length,
     historyCount: matchHistory.length,
     uptime: Math.round(process.uptime()),
-    protocol: "HTTPS (Port 443 / SSL Encrypted)",
     environment: process.env.NODE_ENV || "production"
   });
 });
 
-app.get("/api/admin/users", (req, res) => {
-  const users = readUsers().map((u) => ({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    createdAt: u.createdAt || "2026-10-29T00:00:00.000Z",
-    role: u.email === "admin@hcmut.edu.vn" || u.email === "demo@kahoot.com" ? "Quản trị viên (Admin)" : "Giảng viên"
-  }));
-  res.json(users);
+app.get('/api/admin/users', (req, res) => res.json(readUsers().map(publicUser)));
+app.post('/api/admin/users', (req, res) => {
+  if (!['admin', 'user'].includes(req.body.role || 'user')) return res.status(400).json({ error: 'Vai trò không hợp lệ.' });
+  const result = auth.createUser(req.body, req.body.role || 'user');
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json(publicUser(result.user));
 });
-
-app.post("/api/admin/users", (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "Vui lòng nhập đủ họ tên, email và mật khẩu!" });
-  }
+app.patch('/api/admin/users/:id/role', (req, res) => {
+  if (!['admin', 'user'].includes(req.body.role)) return res.status(400).json({ error: 'Vai trò không hợp lệ.' });
   const users = readUsers();
-  if (users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
-    return res.status(400).json({ error: "Email này đã tồn tại trong hệ thống!" });
-  }
-  const newUser = {
-    id: `user_${Date.now()}`,
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    password: password.trim(),
-    createdAt: new Date().toISOString()
-  };
-  users.push(newUser);
+  const user = users.find((u) => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'Không tìm thấy tài khoản.' });
+  if (user.id === req.user.id) return res.status(400).json({ error: 'Không thể tự đổi quyền của mình.' });
+  user.role = req.body.role;
   saveUsers(users);
-  res.status(201).json({ id: newUser.id, name: newUser.name, email: newUser.email });
+  res.json(publicUser(user));
 });
-
-app.delete("/api/admin/users/:id", (req, res) => {
-  let users = readUsers();
-  users = users.filter((u) => u.id !== req.params.id);
-  saveUsers(users);
-  res.json({ message: "Đã xóa tài khoản người dùng thành công!" });
+app.delete('/api/admin/users/:id', (req, res) => {
+  if (req.params.id === req.user.id) return res.status(400).json({ error: 'Không thể tự xóa tài khoản đang đăng nhập.' });
+  const users = readUsers();
+  if (!users.some((u) => u.id === req.params.id)) return res.status(404).json({ error: 'Không tìm thấy tài khoản.' });
+  saveUsers(users.filter((u) => u.id !== req.params.id));
+  res.json({ message: 'Đã xóa tài khoản.' });
 });
 
 app.get("/api/admin/live-rooms", (req, res) => {
@@ -251,8 +216,16 @@ app.get("/api/admin/history", (req, res) => {
   res.json(matchHistory);
 });
 
-app.get("/api/reports/:pin/export", (req, res) => {
+app.get('/api/history', requireUser, (req, res) => {
+  res.json(req.user.role === 'admin' ? matchHistory : matchHistory.filter((h) => h.userId === req.user.id));
+});
+
+app.get("/api/reports/:pin/export", requireUser, (req, res) => {
   const { pin } = req.params;
+  const room = gameManager.getRoom(pin);
+  if (!room || (req.user.role !== 'admin' && room.ownerId !== req.user.id)) {
+    return res.status(403).json({ error: 'Bạn không có quyền tải báo cáo này.' });
+  }
   const buffer = gameManager.exportExcelReport(pin);
   if (!buffer) {
     return res.status(404).json({ error: "Không tìm thấy dữ liệu trận đấu hoặc phòng chưa kết thúc!" });
@@ -279,10 +252,25 @@ if (fs.existsSync(path.join(clientDist, 'index.html'))) {
 
 // === SOCKET.IO EVENTS ===
 io.on("connection", (socket) => {
-  socket.on("create_room", ({ quizId }) => {
+  function hostAllowed(pin) {
+    const user = auth.resolve(socket.handshake.auth?.token);
+    const room = gameManager.getRoom(pin);
+    if (!user || !room || room.hostSocketId !== socket.id || room.ownerId !== user.id) {
+      socket.emit('host_error', { message: 'Bạn không có quyền điều khiển phòng này.' });
+      return false;
+    }
+    return true;
+  }
+  socket.on("create_room", ({ quizId } = {}) => {
+    const user = auth.resolve(socket.handshake.auth?.token);
+    if (!user) return socket.emit('host_error', { message: 'Vui lòng đăng nhập để mở phòng.' });
     quizzes = readQuizzes();
-    const quiz = quizzes.find((q) => q.id === quizId) || quizzes[0];
+    const quiz = quizzes.find((q) => q.id === quizId);
+    if (!quiz || !canManage(user, quiz) || !quiz.questions?.length) {
+      return socket.emit('host_error', { message: 'Không thể mở bộ đề này.' });
+    }
     const room = gameManager.createRoom(socket.id, quiz);
+    room.ownerId = user.id;
     socket.join(room.pin);
 
     socket.emit("room_created", {
@@ -314,7 +302,8 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("start_quiz", ({ pin }) => {
+  socket.on("start_quiz", ({ pin } = {}) => {
+    if (!hostAllowed(pin)) return;
     gameManager.startQuiz(pin);
   });
 
@@ -330,16 +319,19 @@ io.on("connection", (socket) => {
     gameManager.handleReaction(socket.id, emoji);
   });
 
-  socket.on("show_leaderboard", ({ pin }) => {
+  socket.on("show_leaderboard", ({ pin } = {}) => {
+    if (!hostAllowed(pin)) return;
     gameManager.showLeaderboard(pin);
   });
 
-  socket.on("next_question", ({ pin }) => {
+  socket.on("next_question", ({ pin } = {}) => {
+    if (!hostAllowed(pin)) return;
     gameManager.nextQuestion(pin);
 
     const room = gameManager.getRoom(pin);
     if (room && room.status === "GAME_OVER") {
       matchHistory.unshift({
+        userId: room.ownerId,
         pin: room.pin,
         quizTitle: room.quiz.title,
         playerCount: room.players.size,
@@ -354,5 +346,5 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`BKQuiz Realtime Server running on http://localhost:${PORT}`);
+  console.log(`BKQuiz Realtime Server running on http://localhost:${httpServer.address().port}`);
 });

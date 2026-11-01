@@ -5,10 +5,10 @@ export default function BKLogo({ className = "w-12 h-12", showText = false, text
     <div className="flex items-center gap-3 select-none">
       <img
         className={`object-contain shrink-0 ${className}`}
-        src="/hcmut-logo.png"
+        src="/hcmut-mark.svg"
         alt="Logo Đại học Bách Khoa TP.HCM"
-        width={1208}
-        height={1220}
+        width={1760}
+        height={1790}
       />
 
       {showText && (

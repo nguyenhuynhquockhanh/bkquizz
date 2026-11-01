@@ -55,7 +55,7 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
                 <span className="sm:hidden">Tạo</span>
               </button>
 
-              {/* Nút Cổng Quản Trị Admin */}
+              {currentUser.role === "admin" && (
               <button
                 onClick={() => setView("admin")}
                 className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 transition-colors ${
@@ -65,10 +65,11 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Cổng Admin</span>
-                <span className="sm:hidden">Admin</span>
+                <span className="hidden sm:inline">Quản trị</span>
+                <span className="sm:hidden">Quản trị</span>
               </button>
 
+              )}
               {/* Profile & Đăng xuất */}
               <div className="flex items-center gap-2 pl-2 border-l border-white/30">
                 <div className="hidden md:flex flex-col text-right leading-tight">
@@ -86,28 +87,9 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
               </div>
             </>
           ) : (
-            <>
-              {/* Cho phép truy cập Cổng Admin trực tiếp để chấm đồ án */}
-              <button
-                onClick={() => setView("admin")}
-                className={`px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1.5 transition-colors ${
-                  currentView === "admin"
-                    ? "bg-[#f5c542] text-[#002855] font-black shadow-sm"
-                    : "text-white hover:bg-white/15"
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Cổng Admin</span>
-              </button>
-
-              <button
-                onClick={onOpenLogin}
-                className="px-4 py-1.5 rounded font-bold text-xs uppercase bg-[#f5c542] text-[#002855] hover:bg-[#ffcf4d] shadow-sm flex items-center gap-1.5 transition-colors"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                Đăng nhập SSO
-              </button>
-            </>
+            <button onClick={onOpenLogin} className="px-4 py-1.5 rounded font-bold text-xs uppercase bg-[#f5c542] text-[#002855] hover:bg-[#ffcf4d] shadow-sm flex items-center gap-1.5">
+              <LogIn className="w-3.5 h-3.5" />Đăng nhập
+            </button>
           )}
         </div>
       </div>
