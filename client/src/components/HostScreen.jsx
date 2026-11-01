@@ -1,3 +1,6 @@
+import Modal from "./Modal";
+import GameSettings from "./GameSettings";
+import { notify, askConfirm } from "../services/dialogs";
 import { downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
@@ -22,6 +25,17 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
+  const [settings, setSettings] = useState(roomData?.settings || {});
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [endedEarly, setEndedEarly] = useState(false);
+  const endEarly = async () => {
+    if (await askConfirm('Kết thúc trò chơi ngay? Điểm đã ghi nhận sẽ được giữ lại và mọi người sẽ xem kết quả.')) socket.emit('end_game', { pin: roomData.pin });
+  };
+  const leaveLobby = async () => {
+    if (await askConfirm('Đóng phòng? Những người đang chờ sẽ trở về trang tham gia.')) onLeave();
+  };
   const joinUrl = `${window.location.origin}/?pin=${roomData?.pin}`;
 
   const triggerConfetti = () => {
@@ -33,6 +47,8 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   };
 
   useEffect(() => {
+    socket.on("room_settings", setSettings);
+    socket.on("game_paused", ({ paused }) => { setPaused(paused); if (paused) sounds.stopQuestionBeat(); else sounds.startQuestionBeat(); });
     socket.on("player_joined", ({ players }) => {
       setPlayers(players);
       sounds.playPop();
@@ -88,7 +104,9 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       sounds.playPop();
     });
 
-    socket.on("game_over", ({ podium }) => {
+    socket.on("game_over", ({ podium, endedEarly }) => {
+      setPaused(false);
+      setEndedEarly(!!endedEarly);
       setRoomState("GAME_OVER");
       setPodium(podium);
       triggerConfetti();
@@ -106,6 +124,8 @@ export default function HostScreen({ roomData, socket, onLeave }) {
     return () => {
       sounds.stopLobbyMusic();
       sounds.stopQuestionBeat();
+      socket.off("room_settings");
+      socket.off("game_paused");
       socket.off("player_joined");
       socket.off("player_left");
       socket.off("question_intro");
@@ -126,7 +146,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
 
   const handleShowLeaderboard = () => socket.emit("show_leaderboard", { pin: roomData?.pin });
   const handleNextQuestion = () => socket.emit("next_question", { pin: roomData?.pin });
-  const handleExportExcel = () => downloadReport(roomData?.pin).catch((err) => alert(err.message));
+  const handleExportExcel = () => downloadReport(roomData?.pin).catch((err) => notify(err.message));
 
   const toggleSound = () => {
     const muted = sounds.toggleMute();
@@ -161,7 +181,18 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const activeOptionConfigs = isTrueFalse ? trueFalseBlocks : kahootBlocks;
 
   return (
-    <div className="min-h-screen bg-[#002855] flex flex-col justify-between select-none relative overflow-hidden">
+    <div className="host-screen min-h-dvh bg-[#002855] flex flex-col justify-between select-none relative overflow-hidden">
+      {qrOpen && <Modal title="Quét mã để tham gia" onClose={() => setQrOpen(false)}>
+        <div className="text-center space-y-4"><QRCodeSVG value={joinUrl} size={360} marginSize={4} className="qr-code h-auto mx-auto" />
+          <p className="text-sm text-gray-500">Mã PIN</p><p className="text-4xl sm:text-5xl font-black tracking-widest text-[#002855]">{roomData.pin}</p>
+          <p className="text-sm break-all">{window.location.host}</p></div>
+      </Modal>}
+      {settingsOpen && <GameSettings settings={settings} onClose={() => setSettingsOpen(false)} onSave={draft => { socket.emit('update_room_settings', { pin: roomData.pin, settings: draft }); setSettingsOpen(false); }} />}
+      {roomState !== 'LOBBY' && roomState !== 'GAME_OVER' && <div className="game-controls flex flex-wrap justify-end items-center gap-2 p-3 bg-[#001736] text-white">
+        {paused && <span className="mr-auto font-bold" role="status">Đang tạm dừng</span>}
+        {roomState === 'QUESTION_ACTIVE' && <button onClick={() => socket.emit(paused ? 'resume_game' : 'pause_game', { pin: roomData.pin })} className="px-4 py-2 rounded-lg bg-white text-[#002855] font-bold">{paused ? 'Tiếp tục' : 'Tạm dừng'}</button>}
+        <button onClick={endEarly} className="px-4 py-2 rounded-lg bg-red-700 text-white font-bold">Kết thúc sớm</button>
+      </div>}
       {/* Floating Reactions Overlay */}
       <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
         {floatingReactions.map((r) => (
@@ -179,10 +210,10 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       {/* 1. MÀN HÌNH LOBBY PHÒNG CHỜ */}
       {roomState === "LOBBY" && (
         <div className="flex-1 flex flex-col justify-between">
-          <div className="bg-white border-b-4 border-gray-300 py-4 px-6 sm:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-md">
+          <div className="bg-white border-b-4 border-gray-300 py-4 px-4 sm:px-8 flex flex-col lg:flex-row items-center justify-between gap-4 shadow-md">
             <div className="flex items-center gap-4">
               <div className="bg-gray-100 p-1.5 rounded-lg border border-gray-300 shadow-inner">
-                <QRCodeSVG value={joinUrl} size={76} />
+                <button onClick={() => setQrOpen(true)} aria-label="Phóng to mã QR" className="shrink-0 rounded-lg p-1 bg-white focus-visible:ring-4 ring-blue-500"><QRCodeSVG value={joinUrl} size={76} /></button>
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-2 mb-1">
@@ -202,14 +233,15 @@ export default function HostScreen({ roomData, socket, onLeave }) {
 
             <div className="text-center sm:text-right">
               <div className="text-xs font-black uppercase tracking-widest text-gray-500">
-                MÃ PIN PHÒNG THI:
+                MÃ PIN PHÒNG CHƠI:
               </div>
               <div className="text-5xl font-black text-[#002855] tracking-wider drop-shadow-sm">
                 {roomData?.pin}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={() => setSettingsOpen(true)} className="px-4 py-3 rounded-lg bg-blue-50 text-[#002855] font-bold">Cài đặt</button>
               <button
                 onClick={toggleMusic}
                 title="Bật/Tắt nhạc chờ Lobby"
@@ -235,7 +267,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
                 disabled={players.length === 0}
                 className="px-8 py-3 rounded-lg font-black text-lg uppercase tracking-wider btn-bk-gold disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
               >
-                Bắt đầu thi
+                Bắt đầu
               </button>
             </div>
           </div>
@@ -244,13 +276,13 @@ export default function HostScreen({ roomData, socket, onLeave }) {
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <div className="flex items-center gap-2 text-white font-black text-xl">
                 <Users className="w-6 h-6 text-[#fdb913]" />
-                <span>{players.length} Thí sinh đã tham gia</span>
+                <span>{players.length} người chơi</span>
               </div>
 
               <div className="text-blue-200 font-bold text-sm flex items-center gap-3">
-                {roomData?.showQuestionsOnPlayerScreen !== false && (
+                {settings.showQuestionsOnPlayerScreen !== false && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-900/60 border border-blue-400/30 text-white text-xs font-bold">
-                    <Monitor className="w-3.5 h-3.5 text-green-400" /> Hiện câu hỏi trên máy thí sinh
+                    <Monitor className="w-3.5 h-3.5 text-green-400" /> Câu hỏi trên máy người chơi
                   </span>
                 )}
                 <span>Bộ đề: <span className="text-white font-black">{roomData?.quizTitle}</span></span>
@@ -260,7 +292,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
             {players.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-[#fdb913] animate-spin mb-4" />
-                <h3 className="text-2xl font-black text-white">Đang đợi thí sinh vào phòng...</h3>
+                <h3 className="text-2xl font-black text-white">Đang chờ người chơi…</h3>
                 <p className="text-blue-200 text-sm mt-1">
                   Nhập mã PIN <span className="font-black text-[#fdb913] text-lg">{roomData?.pin}</span> trên thiết bị cá nhân
                 </p>
@@ -281,10 +313,10 @@ export default function HostScreen({ roomData, socket, onLeave }) {
 
             <div className="pt-4 flex justify-start">
               <button
-                onClick={onLeave}
+                onClick={leaveLobby}
                 className="px-5 py-2 rounded-lg font-bold text-sm text-blue-200 hover:text-white bg-black/30 hover:bg-black/50"
               >
-                Hủy phòng & Quay lại
+                Đóng phòng
               </button>
             </div>
           </div>
@@ -302,7 +334,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               {currentQuestion?.question}
             </h1>
           </div>
-          <div className="text-6xl font-black text-[#fdb913] animate-pulse">
+          <div className="text-4xl sm:text-6xl font-black text-[#fdb913] animate-pulse">
             Sẵn sàng...
           </div>
         </div>
@@ -312,12 +344,12 @@ export default function HostScreen({ roomData, socket, onLeave }) {
       {roomState === "QUESTION_ACTIVE" && (
         <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 max-w-7xl mx-auto w-full">
           {/* Thanh trên: Tiêu đề câu hỏi, đồng hồ đếm ngược, số người trả lời */}
-          <div className="flex items-center justify-between gap-4 mb-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 mb-3">
             <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-[#001736] border-4 border-[#fdb913] flex items-center justify-center text-3xl font-black text-white shadow-lg shrink-0">
               {remainingTime}
             </div>
 
-            <div className="flex-1 bg-white rounded-xl p-4 sm:p-6 shadow-xl border-b-4 border-gray-300 text-center">
+            <div className="order-3 sm:order-none w-full sm:w-auto flex-auto sm:flex-1 bg-white rounded-xl p-4 sm:p-6 shadow-xl border-b-4 border-gray-300 text-center">
               <span className="text-xs font-black uppercase tracking-wider text-gray-400 block mb-1">
                 Câu {questionNumber} / {totalQuestions} ({isTrueFalse ? "ĐÚNG / SAI" : "4 LỰA CHỌN"})
               </span>
@@ -421,7 +453,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               onClick={handleShowLeaderboard}
               className="px-8 py-3.5 rounded-lg font-black text-lg uppercase tracking-wider btn-kahoot-white flex items-center gap-2"
             >
-              <span>Xem Bảng Điểm</span>
+              <span>Bảng xếp hạng</span>
               <ArrowRight className="w-5 h-5 stroke-[3]" />
             </button>
           </div>
@@ -433,7 +465,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
         <div className="flex-1 flex flex-col justify-between p-6 max-w-4xl mx-auto w-full">
           <div className="text-center mb-6">
             <h1 className="text-4xl font-black text-white tracking-tight uppercase">
-              Bảng Xếp Hạng Điểm Số
+              Bảng xếp hạng
             </h1>
             <p className="text-blue-200 text-sm font-bold mt-1">
               Top 5 dẫn đầu sau câu {questionNumber} / {totalQuestions}
@@ -473,7 +505,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               onClick={handleNextQuestion}
               className="px-8 py-3.5 rounded-lg font-black text-lg uppercase tracking-wider btn-kahoot-green flex items-center gap-2"
             >
-              <span>{isLastQuestion ? "Xem Chung Cuộc" : "Câu tiếp theo"}</span>
+              <span>{isLastQuestion ? "Xem kết quả" : "Câu tiếp theo"}</span>
               <ArrowRight className="w-5 h-5 stroke-[3]" />
             </button>
           </div>
@@ -488,10 +520,10 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               <BKLogo className="w-12 h-12" />
             </div>
             <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight uppercase">
-              Bục Vinh Danh Podium
+              Kết quả
             </h1>
             <p className="text-blue-200 text-sm font-bold mt-1">
-              Chúc mừng các thí sinh xuất sắc nhất trận đấu BKQuiz!
+              {endedEarly ? "Đã kết thúc sớm. Điểm đã ghi nhận được giữ lại." : "Cảm ơn mọi người đã chơi!"}
             </p>
           </div>
 
@@ -564,7 +596,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
               className="px-6 py-3.5 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green flex items-center gap-2"
             >
               <Download className="w-5 h-5 stroke-[3]" />
-              Xuất Báo Cáo Excel (.xlsx)
+              Tải bảng điểm
             </button>
 
             <button

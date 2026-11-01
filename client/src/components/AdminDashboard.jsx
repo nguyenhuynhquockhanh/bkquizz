@@ -1,3 +1,4 @@
+import { notify, askConfirm } from "../services/dialogs";
 import { apiFetch as fetch, downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { Users, BookOpen, HelpCircle, Activity, ShieldCheck, Download, Trash2, Plus, Search, RefreshCw, Server, CheckCircle2 } from "lucide-react";
@@ -51,35 +52,35 @@ export default function AdminDashboard({ onBack, currentUser }) {
   }, [backendUrl]);
 
   const handleDeleteQuiz = async (quizId, title) => {
-    if (!window.confirm(`[ADMIN] Bạn có chắc muốn xóa vĩnh viễn bộ đề: "${title}"?`)) return;
+    if (!await askConfirm(`Bạn có chắc muốn xóa vĩnh viễn bộ đề: "${title}"?`)) return;
     try {
       const res = await fetch(`${backendUrl}/api/quizzes/${quizId}`, { method: "DELETE" });
       if (res.ok) {
-        alert("Đã xóa bộ đề thành công!");
+        notify("Đã xóa quiz.");
         fetchAdminData();
       }
     } catch (_err) {
-      alert("Lỗi khi xóa!");
+      notify("Lỗi khi xóa!");
     }
   };
 
   const handleDeleteUser = async (userId, name) => {
-    if (!window.confirm(`[ADMIN] Bạn có chắc muốn xóa tài khoản: "${name}"?`)) return;
+    if (!await askConfirm(`Bạn có chắc muốn xóa tài khoản: "${name}"?`)) return;
     try {
       const res = await fetch(`${backendUrl}/api/admin/users/${userId}`, { method: "DELETE" });
       if (res.ok) {
-        alert("Đã xóa tài khoản thành công!");
+        notify("Đã xóa tài khoản thành công!");
         fetchAdminData();
       }
     } catch (_err) {
-      alert("Lỗi khi xóa tài khoản!");
+      notify("Lỗi khi xóa tài khoản!");
     }
   };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserEmail.trim() || !newUserPassword.trim()) {
-      alert("Vui lòng nhập đầy đủ thông tin!");
+      notify("Vui lòng nhập đầy đủ thông tin!");
       return;
     }
 
@@ -96,7 +97,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
       });
 
       if (res.ok) {
-        alert("Đã thêm tài khoản mới thành công!");
+        notify("Đã thêm tài khoản mới thành công!");
         setNewUserName("");
         setNewUserEmail("");
         setNewUserPassword("");
@@ -105,10 +106,10 @@ export default function AdminDashboard({ onBack, currentUser }) {
         fetchAdminData();
       } else {
         const data = await res.json();
-        alert(data.error || "Không thể tạo tài khoản!");
+        notify(data.error || "Không thể tạo tài khoản!");
       }
     } catch (_err) {
-      alert("Lỗi kết nối máy chủ!");
+      notify("Lỗi kết nối máy chủ!");
     }
   };
 
@@ -119,7 +120,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error); }
       await fetchAdminData();
-    } catch (err) { alert(err.message || 'Không thể đổi quyền.'); }
+    } catch (err) { notify(err.message || 'Không thể đổi quyền.'); }
   };
 
   const filteredQuizzes = quizzes.filter(
@@ -145,7 +146,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
                 </span>
               </div>
               <p className="text-gray-500 text-xs mt-0.5">
-                Quản lý người dùng, toàn bộ ngân hàng câu hỏi, phòng thi thời gian thực và báo cáo đồ án.
+                Quản lý tài khoản, quiz và kết quả chơi.
               </p>
             </div>
           </div>
@@ -162,7 +163,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
               onClick={onBack}
               className="px-4 py-2 rounded-lg text-xs font-bold bg-[#002855] text-white hover:bg-[#003d80] transition-colors shadow-sm"
             >
-              Về Trang Quản Lý Đề
+              Về thư viện
             </button>
           </div>
         </div>
@@ -201,7 +202,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
 
           <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-[11px] font-black uppercase text-gray-400 block">Phòng thi Live / Socket</span>
+              <span className="text-[11px] font-black uppercase text-gray-400 block">Phòng đang chơi</span>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-3xl font-black text-[#002855]">{liveRooms.length}</span>
                 <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
@@ -256,7 +257,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
                 : "border-transparent text-gray-400 hover:text-gray-700"
             }`}
           >
-            Phòng Live ({liveRooms.length})
+            Phòng đang chơi ({liveRooms.length})
           </button>
 
           <button
@@ -308,7 +309,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
                 <div className="flex justify-between py-2">
                   <span className="font-bold">Trạng thái Cơ sở dữ liệu:</span>
                   <span className="font-black text-green-700 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> JSON In-Memory / File Storage Đồng bộ
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Tệp JSON
                   </span>
                 </div>
               </div>
@@ -318,23 +319,23 @@ export default function AdminDashboard({ onBack, currentUser }) {
               <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
                 <Server className="w-5 h-5 text-[#0052cc]" />
                 <h3 className="font-black text-base text-gray-900">
-                  Cấu Hình Phòng Thi & Chịu Tải
+                  Quản lý trò chơi
                 </h3>
               </div>
 
               <div className="space-y-3 text-xs text-gray-600">
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <span className="font-black text-[#002855] block mb-1">
-                    Khả năng mở rộng phòng thi:
+                    Phòng đang chơi
                   </span>
-                  Theo dõi số phòng và người tham gia tại mục Phòng Live. Dữ liệu được cập nhật khi bấm Làm mới.
+                  Xem các phòng và người tham gia tại mục Phòng đang chơi. Nhấn Làm mới để cập nhật.
                 </div>
 
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <span className="font-black text-amber-900 block mb-1">
-                    Đồng bộ màn hình thí sinh (Player Screen Sync):
+                    Câu hỏi trên máy người chơi
                   </span>
-                  Người tạo đề có thể bật/tắt để người thi đọc toàn bộ câu hỏi và nội dung chữ ngay trên điện thoại hoặc máy tính cá nhân.
+                  Chủ phòng có thể bật hoặc tắt tùy chọn này trong Cài đặt trước khi bắt đầu.
                 </div>
               </div>
             </div>
@@ -362,38 +363,38 @@ export default function AdminDashboard({ onBack, currentUser }) {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="responsive-table w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-xs font-black uppercase text-gray-500">
                     <th className="py-3 px-4">Ảnh bìa</th>
-                    <th className="py-3 px-4">Tên Bộ Đề</th>
+                    <th className="py-3 px-4">Tên quiz</th>
                     <th className="py-3 px-4">Số câu</th>
-                    <th className="py-3 px-4">Đọc trên máy thí sinh</th>
-                    <th className="py-3 px-4 text-right">Thao tác Admin</th>
+                    <th className="py-3 px-4">Đọc trên máy người chơi</th>
+                    <th className="py-3 px-4 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm font-bold">
                   {filteredQuizzes.map((quiz) => (
                     <tr key={quiz.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 w-16">
+                      <td data-label="Ảnh bìa" className="py-3 px-4 w-16">
                         <img
                           src={quiz.coverImage}
                           alt={quiz.title}
                           className="w-12 h-9 object-cover rounded border border-gray-200"
                         />
                       </td>
-                      <td className="py-3 px-4">
+                      <td data-label="Tên quiz" className="py-3 px-4">
                         <div className="font-black text-[#002855] text-sm">{quiz.title}</div>
                         <div className="text-xs text-gray-400 font-normal line-clamp-1">
                           {quiz.description || "Chưa có mô tả"}
                         </div>
                       </td>
-                      <td className="py-3 px-4">
+                      <td data-label="Số câu" className="py-3 px-4">
                         <span className="px-2 py-0.5 rounded bg-blue-50 text-[#0052cc] text-xs font-black">
                           {quiz.questions?.length || 0} câu
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td data-label="Đọc trên máy người chơi" className="py-3 px-4">
                         {quiz.showQuestionsOnPlayerScreen !== false ? (
                           <span className="text-xs text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded">
                             Bật
@@ -404,7 +405,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td data-label="Thao tác" className="py-3 px-4 text-right">
                         <button
                           onClick={() => handleDeleteQuiz(quiz.id, quiz.title)}
                           title="Xóa vĩnh viễn bộ đề này"
@@ -497,7 +498,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
             )}
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="responsive-table w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-xs font-black uppercase text-gray-500">
                     <th className="py-3 px-4">Họ và Tên</th>
@@ -510,18 +511,18 @@ export default function AdminDashboard({ onBack, currentUser }) {
                 <tbody className="divide-y divide-gray-100 text-sm font-bold">
                   {users.map((u) => (
                     <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 font-black text-[#002855]">{u.name}</td>
-                      <td className="py-3 px-4 text-gray-700">{u.email}</td>
-                      <td className="py-3 px-4">
+                      <td data-label="Họ và Tên" className="py-3 px-4 font-black text-[#002855]">{u.name}</td>
+                      <td data-label="Email" className="py-3 px-4 text-gray-700">{u.email}</td>
+                      <td data-label="Vai trò" className="py-3 px-4">
                         <select aria-label={`Vai trò của ${u.name}`} value={u.role} disabled={u.id === currentUser.id}
                           onChange={(e) => changeRole(u.id, e.target.value)} className="border rounded px-2 py-1 bg-white disabled:bg-gray-100">
                           <option value="user">Người dùng</option><option value="admin">Quản trị viên</option>
                         </select>
                       </td>
-                      <td className="py-3 px-4 text-xs text-gray-500">
+                      <td data-label="Ngày tạo" className="py-3 px-4 text-xs text-gray-500">
                         {new Date(u.createdAt).toLocaleDateString("vi-VN")}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td data-label="Xóa" className="py-3 px-4 text-right">
                         <button
                           disabled={u.id === currentUser.id}
                           onClick={() => handleDeleteUser(u.id, u.name)}
@@ -543,12 +544,12 @@ export default function AdminDashboard({ onBack, currentUser }) {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
             <div>
               <h3 className="font-black text-base text-[#002855]">Giám Sát Phòng Thi Đang Chạy (Live Socket.IO Rooms)</h3>
-              <p className="text-gray-500 text-xs">Theo dõi thời gian thực các phòng thi đang mở, mã PIN và số lượng thí sinh.</p>
+              <p className="text-gray-500 text-xs">Theo dõi thời gian thực các phòng chơi đang mở, mã PIN và số lượng người chơi.</p>
             </div>
 
             {liveRooms.length === 0 ? (
               <div className="p-8 text-center text-gray-400 font-bold bg-gray-50 rounded-lg">
-                Hiện tại không có phòng thi nào đang hoạt động.
+                Hiện tại không có phòng chơi nào đang hoạt động.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -566,7 +567,7 @@ export default function AdminDashboard({ onBack, currentUser }) {
 
                     <div className="font-black text-sm text-gray-900 line-clamp-1">{r.quizTitle}</div>
                     <div className="text-xs text-gray-600 flex justify-between">
-                      <span>Thí sinh: <strong>{r.playerCount} người</strong></span>
+                      <span>Người chơi: <strong>{r.playerCount} người</strong></span>
                       <span>Tiến độ: <strong>{r.currentQuestion} / {r.totalQuestions}</strong></span>
                     </div>
                   </div>
@@ -581,16 +582,16 @@ export default function AdminDashboard({ onBack, currentUser }) {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-5 space-y-4">
             <div>
               <h3 className="font-black text-base text-[#002855]">Báo Cáo Trận Đấu & Tải File Excel (.xlsx)</h3>
-              <p className="text-gray-500 text-xs">Tải bảng điểm xếp hạng và bảng phân tích tỉ lệ trả lời câu hỏi của từng phòng thi.</p>
+              <p className="text-gray-500 text-xs">Tải bảng điểm xếp hạng và bảng phân tích tỉ lệ trả lời câu hỏi của từng phòng chơi.</p>
             </div>
 
             {history.length === 0 ? (
               <div className="p-8 text-center text-gray-400 font-bold bg-gray-50 rounded-lg">
-                Chưa có phòng thi nào hoàn thành trận đấu.
+                Chưa có phòng chơi nào hoàn thành trận đấu.
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="responsive-table w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 text-xs font-black uppercase text-gray-500">
                       <th className="py-3 px-4">Mã PIN</th>
@@ -603,15 +604,15 @@ export default function AdminDashboard({ onBack, currentUser }) {
                   <tbody className="divide-y divide-gray-100 text-sm font-bold">
                     {history.map((h, idx) => (
                       <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4 font-black text-[#0052cc]">{h.pin}</td>
-                        <td className="py-3 px-4 text-[#002855]">{h.quizTitle}</td>
-                        <td className="py-3 px-4 text-gray-700">{h.playerCount} người</td>
-                        <td className="py-3 px-4 text-xs text-gray-500">
+                        <td data-label="Mã PIN" className="py-3 px-4 font-black text-[#0052cc]">{h.pin}</td>
+                        <td data-label="Tên Trận Đấu" className="py-3 px-4 text-[#002855]">{h.quizTitle}</td>
+                        <td data-label="Số Thí Sinh" className="py-3 px-4 text-gray-700">{h.playerCount} người</td>
+                        <td data-label="Thời gian kết thúc" className="py-3 px-4 text-xs text-gray-500">
                           {new Date(h.endedAt).toLocaleString("vi-VN")}
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td data-label="Tải Báo Cáo" className="py-3 px-4 text-right">
                           <button
-                            onClick={() => downloadReport(h.pin).catch((err) => alert(err.message))}
+                            onClick={() => downloadReport(h.pin).catch((err) => notify(err.message))}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-black uppercase bg-[#26890c] text-white hover:bg-[#1b6308] shadow-sm"
                           >
                             <Download className="w-3.5 h-3.5" />

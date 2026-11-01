@@ -278,11 +278,12 @@ io.on("connection", (socket) => {
       quizTitle: quiz.title,
       totalQuestions: quiz.questions.length,
       coverImage: quiz.coverImage,
+      settings: room.settings,
       showQuestionsOnPlayerScreen: room.showQuestionsOnPlayerScreen
     });
   });
 
-  socket.on("join_room", ({ pin, nickname, avatar }) => {
+  socket.on("join_room", ({ pin, nickname, avatar } = {}) => {
     const result = gameManager.addPlayer(pin, socket.id, nickname, avatar);
     if (result.error) {
       return socket.emit("join_error", { message: result.error });
@@ -293,6 +294,7 @@ io.on("connection", (socket) => {
       pin,
       player: result.player,
       quizTitle: result.room.quiz.title,
+      settings: result.room.settings,
       showQuestionsOnPlayerScreen: result.room.showQuestionsOnPlayerScreen
     });
 
@@ -302,12 +304,39 @@ io.on("connection", (socket) => {
     });
   });
 
+  function recordFinished(room) {
+    if (!room || room.status !== "GAME_OVER" || room.historyRecorded) return;
+    room.historyRecorded = true;
+    matchHistory.unshift({ userId: room.ownerId, pin: room.pin, quizTitle: room.quiz.title,
+      playerCount: room.players.size, endedAt: new Date().toISOString(), endedEarly: !!room.endedEarly });
+  }
+  socket.on("update_room_settings", ({ pin, settings } = {}) => {
+    if (hostAllowed(pin)) gameManager.updateSettings(pin, settings && typeof settings === 'object' ? settings : {});
+  });
+  for (const [event, method] of [["pause_game", "pauseGame"], ["resume_game", "resumeGame"], ["end_game", "stopGame"]]) {
+    socket.on(event, ({ pin } = {}) => {
+      if (!hostAllowed(pin)) return;
+      gameManager[method](pin);
+      recordFinished(gameManager.getRoom(pin));
+    });
+  }
+  socket.on("close_room", ({ pin } = {}) => {
+    if (!hostAllowed(pin)) return;
+    const room = gameManager.getRoom(pin);
+    if (room.status !== "GAME_OVER") gameManager.closeRoom(pin);
+    else socket.leave(pin);
+  });
+  socket.on("leave_room", () => {
+    const mapping = gameManager.playerSocketMap.get(socket.id);
+    if (mapping) socket.leave(mapping.pin);
+    gameManager.removePlayer(socket.id);
+  });
   socket.on("start_quiz", ({ pin } = {}) => {
     if (!hostAllowed(pin)) return;
     gameManager.startQuiz(pin);
   });
 
-  socket.on("submit_answer", ({ optionId, usedDouble }) => {
+  socket.on("submit_answer", ({ optionId, usedDouble } = {}) => {
     gameManager.submitAnswer(socket.id, optionId, usedDouble);
   });
 
@@ -328,16 +357,7 @@ io.on("connection", (socket) => {
     if (!hostAllowed(pin)) return;
     gameManager.nextQuestion(pin);
 
-    const room = gameManager.getRoom(pin);
-    if (room && room.status === "GAME_OVER") {
-      matchHistory.unshift({
-        userId: room.ownerId,
-        pin: room.pin,
-        quizTitle: room.quiz.title,
-        playerCount: room.players.size,
-        endedAt: new Date().toISOString()
-      });
-    }
+    recordFinished(gameManager.getRoom(pin));
   });
 
   socket.on("disconnect", () => {

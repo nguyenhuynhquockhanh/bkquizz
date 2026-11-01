@@ -29,7 +29,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
   const handlePinSubmit = (e) => {
     e.preventDefault();
     if (!pin.trim()) {
-      setErrorMsg("Vui lòng nhập mã PIN phòng thi!");
+      setErrorMsg("Vui lòng nhập mã PIN phòng chơi!");
       return;
     }
     setErrorMsg("");
@@ -60,12 +60,12 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
             BK<span className="text-[#0275b8]">Quiz</span> • HCMUT
           </h1>
           <p className="text-xs text-[#002855] font-semibold mt-1">
-            Hệ thống Trắc nghiệm Tương tác Trực tuyến ĐH Bách Khoa TP.HCM
+            Cùng chơi, cùng khám phá.
           </p>
         </div>
 
         {/* 2 Khối Lựa Chọn Vàng Chuẩn Giao Diện MyBK nếu chưa nhập PIN */}
-        <div className="w-full bg-white/25 rounded-2xl p-6 sm:p-8 border border-white/40 shadow-sm">
+        <div className="w-full bg-white/25 rounded-2xl p-4 sm:p-8 border border-white/40 shadow-sm">
           {errorMsg && (
             <div className="mb-4 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-bold text-center">
               {errorMsg}
@@ -76,7 +76,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
             <form onSubmit={handlePinSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1.5 text-center">
-                  Nhập mã PIN phòng thi để tham gia
+                  Nhập mã PIN
                 </label>
                 <input
                   type="text"
@@ -95,7 +95,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
                   className="h-14 rounded-xl bg-[#f5c542] hover:bg-[#ffcf4d] text-[#002855] font-black text-xs uppercase flex flex-col items-center justify-center gap-1 shadow-sm transition-all hover:shadow"
                 >
                   <User className="w-5 h-5 text-[#002855]" />
-                  <span>Vào thi ngay (PIN)</span>
+                  <span>Tham gia</span>
                 </button>
 
                 {currentUser ? (
@@ -122,16 +122,16 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
           ) : (
             <form onSubmit={handleJoinFinal} className="space-y-4">
               <div className="text-center text-xs font-bold text-gray-500 mb-1">
-                PHÒNG THI MÃ PIN: <span className="text-[#0275b8] font-black text-base">{pin}</span>
+                PHÒNG CHƠI MÃ PIN: <span className="text-[#0275b8] font-black text-base">{pin}</span>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-600 mb-1">
-                  Họ và tên hoặc Mã số sinh viên (MSSV):
+                  Biệt danh của bạn
                 </label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: Nguyễn Văn A - 2110001"
+                  placeholder="Nhập biệt danh"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
                   maxLength={25}
@@ -143,7 +143,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
               {/* Chọn Avatar */}
               <div>
                 <div className="text-xs font-bold text-gray-500 mb-2 text-center">
-                  Biểu tượng đại diện thí sinh:
+                  Chọn biểu tượng
                 </div>
                 <div className="flex justify-center gap-1.5 flex-wrap">
                   {AVATARS.map((av) => (
@@ -175,7 +175,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
                   type="submit"
                   className="w-2/3 h-11 rounded-lg font-black text-xs uppercase tracking-wider bg-[#0275b8] hover:bg-[#02629b] text-white shadow-sm"
                 >
-                  Bắt đầu vào thi
+                  Vào chơi
                 </button>
               </div>
             </form>
@@ -190,7 +190,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
         ) : (
           <div className="mt-4 text-center">
             <span className="text-xs text-[#002855] font-medium">
-              Đăng ký tài khoản BKQuiz bằng tên đăng nhập hoặc email của bạn.
+              Đăng nhập để tạo quiz và mở phòng.
             </span>
           </div>
         )}
@@ -201,7 +201,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
         <div className="p-3.5 rounded-xl border border-gray-200 bg-[#f8f9fa] flex items-center gap-3">
           <Monitor className="w-5 h-5 text-[#0275b8] shrink-0" />
           <div className="text-xs">
-            <span className="font-bold text-[#002855] block">Đồng Bộ Màn Hình Thí Sinh</span>
+            <span className="font-bold text-[#002855] block">Chơi trên thiết bị của bạn</span>
             <span className="text-gray-500 text-[11px]">Đọc câu hỏi và đáp án trực tiếp trên máy</span>
           </div>
         </div>
@@ -209,16 +209,16 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
         <div className="p-3.5 rounded-xl border border-gray-200 bg-[#f8f9fa] flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-green-600 shrink-0" />
           <div className="text-xs">
-            <span className="font-bold text-[#002855] block">Bảo Mật HTTPS (Port 443)</span>
-            <span className="text-gray-500 text-[11px]">Mã hóa SSL/TLS trên Azure Web Apps</span>
+            <span className="font-bold text-[#002855] block">Kết nối bảo mật</span>
+            <span className="text-gray-500 text-[11px]">Tham gia bằng mã PIN hoặc QR</span>
           </div>
         </div>
 
         <div className="p-3.5 rounded-xl border border-gray-200 bg-[#f8f9fa] flex items-center gap-3">
           <FileSpreadsheet className="w-5 h-5 text-[#d89e00] shrink-0" />
           <div className="text-xs">
-            <span className="font-bold text-[#002855] block">Báo Cáo Điểm Excel (.xlsx)</span>
-            <span className="text-gray-500 text-[11px]">Thống kê bảng điểm và tỉ lệ đúng/sai</span>
+            <span className="font-bold text-[#002855] block">Xem kết quả</span>
+            <span className="text-gray-500 text-[11px]">Tải bảng điểm sau mỗi trò chơi</span>
           </div>
         </div>
       </div>

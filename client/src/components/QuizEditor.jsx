@@ -1,3 +1,4 @@
+import { notify } from "../services/dialogs";
 import { apiFetch as fetch } from "../services/api";
 import React, { useState } from "react";
 import { Plus, Trash2, ArrowLeft, Clock, Award, Check, Image as ImageIcon, HelpCircle, Monitor, FileText } from "lucide-react";
@@ -12,7 +13,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
   const [showQuestionsOnPlayerScreen, setShowQuestionsOnPlayerScreen] = useState(
     editQuizData?.showQuestionsOnPlayerScreen !== false
   );
-  const [questions, setQuestions] = useState(
+  const [questions, setQuestions] = useState(() =>
     editQuizData?.questions || [
       {
         id: `q_${Date.now()}`,
@@ -55,7 +56,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
     const newQ = {
       id: `q_${Date.now()}_${questions.length}`,
       type,
-      question: type === "TRUE_FALSE" ? "Mệnh đề này là Đúng hay Sai?" : "Nhập câu hỏi của bạn tại đây...",
+      question: type === "TRUE_FALSE" ? "Mệnh đề này là Đúng hay Sai?" : "Nhập câu hỏi…",
       imageUrl: "",
       timeLimit: 15,
       points: 1000,
@@ -88,7 +89,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
   const handleDeleteQuestion = (index, e) => {
     e.stopPropagation();
     if (questions.length <= 1) {
-      alert("Bộ đề thi cần có tối thiểu ít nhất 1 câu hỏi!");
+      notify("Quiz cần ít nhất một câu hỏi.");
       return;
     }
     const updated = questions.filter((_, i) => i !== index);
@@ -118,7 +119,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
 
   const handleSaveQuiz = async () => {
     if (!title.trim()) {
-      alert("Vui lòng nhập tiêu đề cho bộ đề thi!");
+      notify("Đặt tên cho quiz trước khi lưu.");
       return;
     }
 
@@ -144,14 +145,14 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
       });
 
       if (res.ok) {
-        alert(isEdit ? "Đã cập nhật bộ đề thành công!" : "Đã lưu bộ đề mới thành công!");
+        notify(isEdit ? "Đã cập nhật quiz." : "Đã lưu quiz.");
         onSaved();
       } else {
-        alert("Có lỗi xảy ra khi lưu!");
+        notify("Có lỗi xảy ra khi lưu!");
       }
     } catch (err) {
       console.error(err);
-      alert("Không thể kết nối đến server backend!");
+      notify("Mất kết nối. Thử lại nhé.");
     } finally {
       setIsSaving(false);
     }
@@ -173,11 +174,12 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#f0f4f9] text-gray-900 flex flex-col justify-between">
-      {/* Top Header thanh công cụ BK Quiz Creator */}
+      {/* Thanh công cụ */}
       <div className="bg-white border-b-2 border-gray-200 px-6 py-3 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={onBack}
+            aria-label="Về thư viện"
             className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -185,16 +187,17 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
           <div>
             <input
               type="text"
-              placeholder="Nhập tiêu đề bộ đề thi..."
+              aria-label="Tên quiz"
+              placeholder="Tên quiz…"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="font-black text-xl text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-[#0052cc] focus:outline-none px-1 py-0.5 w-64 sm:w-96"
+              className="font-black text-xl text-gray-900 border-b border-transparent hover:border-gray-300 focus:border-[#0052cc] focus:outline-none px-1 py-0.5 w-full sm:w-80 max-w-full"
             />
           </div>
         </div>
 
         {/* Nút cài đặt & hiển thị câu hỏi trên máy người chơi */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Nút bật/tắt hiển thị câu hỏi cho người chơi */}
           <button
             type="button"
@@ -207,11 +210,11 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
             title="Bật/Tắt hiển thị câu hỏi và chữ đáp án trực tiếp trên điện thoại/máy tính của người chơi"
           >
             <Monitor className="w-4 h-4" />
-            <span>Hiển thị câu hỏi trên máy người chơi:</span>
-            <span className={`px-1.5 py-0.5 rounded text-[11px] font-black ${
+            <span>Câu hỏi trên máy người chơi</span>
+            <span className={`shrink-0 px-1.5 py-0.5 rounded text-[11px] font-black ${
               showQuestionsOnPlayerScreen ? "bg-green-600 text-white" : "bg-gray-400 text-white"
             }`}>
-              {showQuestionsOnPlayerScreen ? "BẬT" : "TẮT"}
+              {showQuestionsOnPlayerScreen ? "Bật" : "Tắt"}
             </span>
           </button>
 
@@ -221,7 +224,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
             className="px-3 py-2 rounded-lg text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1.5"
           >
             <FileText className="w-4 h-4" />
-            <span>Thông tin bộ đề</span>
+            <span>Thông tin quiz</span>
           </button>
 
           <button
@@ -229,7 +232,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
             disabled={isSaving}
             className="px-6 py-2.5 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green shadow"
           >
-            {isSaving ? "Đang lưu..." : editQuizData?.id ? "Cập nhật đề" : "Lưu bộ đề"}
+            {isSaving ? "Đang lưu..." : editQuizData?.id ? "Lưu thay đổi" : "Lưu quiz"}
           </button>
         </div>
       </div>
@@ -266,14 +269,14 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
       )}
 
       {/* Vùng soạn thảo chính */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full p-4 sm:p-6 gap-6">
+      <div className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full p-4 sm:p-6 gap-6">
         {/* Cột trái: Slide các câu hỏi */}
-        <div className="w-full md:w-64 flex flex-col gap-3">
-          <div className="flex items-center justify-between px-1">
+        <div className="w-full lg:w-64 lg:shrink-0 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-1">
             <span className="font-black text-xs uppercase text-gray-500">
               Câu hỏi ({questions.length})
             </span>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => handleAddQuestion("MULTIPLE_CHOICE")}
                 title="Thêm trắc nghiệm 4 lựa chọn"
@@ -299,7 +302,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
                 onClick={() => setActiveQIndex(idx)}
                 className={`p-3 rounded-lg border-2 flex items-center justify-between cursor-pointer transition-all ${
                   activeQIndex === idx
-                    ? "bg-white border-[#0052cc] shadow-md scale-[1.02]"
+                    ? "bg-white border-[#0052cc] shadow-md"
                     : "bg-white/80 border-gray-200 hover:bg-white"
                 }`}
               >
@@ -328,14 +331,14 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
         </div>
 
         {/* Khu vực giữa: Khung soạn thảo câu hỏi chi tiết */}
-        <div className="flex-1 flex flex-col justify-between space-y-4">
+        <div className="min-w-0 flex-1 flex flex-col justify-between space-y-4">
           {/* Ô nhập câu hỏi lớn ở trên */}
           <div className="bg-white rounded-xl p-5 shadow-md border-b-4 border-gray-200 text-center">
             <textarea
               rows={2}
               value={currentQ.question}
               onChange={(e) => updateCurrentQuestion("question", e.target.value)}
-              placeholder="Bắt đầu nhập nội dung câu hỏi tại đây..."
+              placeholder="Câu hỏi của bạn…"
               className="w-full text-center text-xl sm:text-2xl font-black text-gray-900 placeholder-gray-400 border-0 focus:outline-none resize-none"
             />
           </div>
@@ -344,7 +347,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
           <div className="bg-white rounded-lg p-3.5 shadow-sm border border-gray-200 flex flex-col sm:flex-row items-center gap-3">
             <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-500 shrink-0">
               <ImageIcon className="w-4 h-4 text-[#0052cc]" />
-              <span>Link ảnh minh họa:</span>
+              <span>Ảnh minh họa</span>
             </div>
             <input
               type="text"
@@ -392,6 +395,8 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
                 <option value={20}>20 giây</option>
                 <option value={30}>30 giây</option>
                 <option value={60}>60 giây</option>
+                <option value={120}>120 giây</option>
+                <option value={240}>240 giây</option>
               </select>
             </div>
 
@@ -427,6 +432,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
 
                   <button
                     type="button"
+                    aria-label={`Chọn đáp án ${idx + 1} là đúng`}
                     onClick={() => setCorrectOption(idx)}
                     className={`w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all ${
                       opt.isCorrect
@@ -444,22 +450,24 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
               {currentQ.options.map((opt, idx) => (
                 <div
                   key={opt.id}
-                  className={`${optionColorConfigs[idx]?.bg} rounded-xl p-4 flex items-center gap-3 shadow-md min-h-[90px]`}
+                  className={`${optionColorConfigs[idx]?.bg} rounded-xl p-4 flex flex-wrap items-center gap-3 shadow-md min-h-[90px]`}
                 >
                   <span className="text-2xl text-white font-black select-none">
                     {optionColorConfigs[idx]?.icon}
                   </span>
 
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
+                    aria-label={`Đáp án ${idx + 1}`}
                     value={opt.text}
                     onChange={(e) => updateOptionText(idx, e.target.value)}
                     placeholder={`Nhập đáp án ${idx + 1}`}
-                    className="flex-1 bg-transparent text-white font-black text-lg placeholder-white/60 focus:outline-none border-b border-white/20 focus:border-white py-1"
+                    className="min-w-0 resize-y flex-1 bg-transparent text-white font-black text-lg placeholder-white/60 focus:outline-none border-b border-white/20 focus:border-white py-1"
                   />
 
                   <button
                     type="button"
+                    aria-label={`Chọn đáp án ${idx + 1} là đúng`}
                     onClick={() => setCorrectOption(idx)}
                     className={`w-9 h-9 rounded-full border-4 flex items-center justify-center transition-all ${
                       opt.isCorrect

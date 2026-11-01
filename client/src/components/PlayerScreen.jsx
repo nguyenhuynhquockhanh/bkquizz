@@ -1,3 +1,4 @@
+import { notify } from "../services/dialogs";
 import React, { useState, useEffect } from "react";
 import { Check, X, Flame, Zap } from "lucide-react";
 import { sounds } from "../services/sound";
@@ -21,9 +22,13 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
   const [totalScore, setTotalScore] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
 
+  const [paused, setPaused] = useState(false);
+  const [powerUpsEnabled, setPowerUpsEnabled] = useState(!!playerData?.settings?.powerUps);
   const EMOJIS = ["❤️", "😂", "🔥", "👏", "⚡", "🎓"];
 
   useEffect(() => {
+    socket.on("game_paused", ({ paused }) => setPaused(paused));
+    socket.on("room_settings", settings => { setPowerUpsEnabled(settings.powerUps); setShowQuestionsOnPlayer(settings.showQuestionsOnPlayerScreen); });
     socket.on("question_intro", ({ questionNumber, questionType, questionTitle: qTitle, showQuestionsOnPlayer: sQ }) => {
       setPlayerState("INTRO");
       setCurrentQuestionNumber(questionNumber);
@@ -82,13 +87,15 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
     });
 
     socket.on("leaderboard_update", () => setPlayerState("WAITING_NEXT"));
-    socket.on("game_over", () => setPlayerState("GAME_OVER"));
+    socket.on("game_over", ({ allPlayers }) => { setPaused(false); setPlayerState("GAME_OVER"); const me = allPlayers?.find(p => p.id === playerData?.player?.id); if (me) setTotalScore(me.score); });
     socket.on("room_closed", ({ message }) => {
-      alert(message || "Phòng thi đã kết thúc!");
+      notify(message || "Phòng thi đã kết thúc!");
       onLeave();
     });
 
     return () => {
+      socket.off("game_paused");
+      socket.off("room_settings");
       socket.off("question_intro");
       socket.off("question_start_player");
       socket.off("timer_tick");
@@ -98,17 +105,17 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
       socket.off("game_over");
       socket.off("room_closed");
     };
-  }, [socket, onLeave, playerState]);
+  }, [socket, onLeave, playerState, playerData?.player?.id]);
 
   const handleSelectAnswer = (optionId) => {
-    if (playerState !== "PLAYING") return;
+    if (playerState !== "PLAYING" || paused) return;
     sounds.playPop();
     setPlayerState("SUBMITTED");
     socket.emit("submit_answer", { optionId, usedDouble: useDoublePointsThisRound });
   };
 
   const handleUseFiftyFifty = () => {
-    if (powerUps.fiftyFifty > 0 && playerState === "PLAYING" && currentQuestionType !== "TRUE_FALSE") {
+    if (!paused && powerUps.fiftyFifty > 0 && playerState === "PLAYING" && currentQuestionType !== "TRUE_FALSE") {
       sounds.playPop();
       setPowerUps((prev) => ({ ...prev, fiftyFifty: prev.fiftyFifty - 1 }));
       socket.emit("use_fifty_fifty");
@@ -116,7 +123,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
   };
 
   const handleToggleDouble = () => {
-    if (powerUps.doublePoints > 0 && playerState === "PLAYING") {
+    if (!paused && powerUps.doublePoints > 0 && playerState === "PLAYING") {
       sounds.playPop();
       setUseDoublePointsThisRound((prev) => !prev);
     }
@@ -142,14 +149,15 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
   const isTrueFalse = currentQuestionType === "TRUE_FALSE";
 
   return (
-    <div className="h-screen w-screen flex flex-col justify-between select-none overflow-hidden bg-[#002855]">
+    <div className="player-screen min-h-dvh w-full flex flex-col justify-between select-none bg-[#002855]">
+      {paused && <div className="fixed inset-0 z-40 bg-[#001736]/95 text-white flex items-center justify-center p-6 text-center" role="status"><div><h2 className="text-3xl font-black">Đang tạm dừng</h2><p className="mt-3">Chờ chủ phòng tiếp tục nhé.</p></div></div>}
       {/* Top Header mỏng chuẩn BK */}
       <div className="bg-[#001c3d] border-b-2 border-[#00132b] px-4 py-2.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-2">
           <span className="text-2xl">{playerData?.player?.avatar}</span>
           <div className="flex flex-col text-left leading-tight">
             <span className="font-black text-white text-sm sm:text-base">{playerData?.player?.nickname}</span>
-            <span className="text-[10px] text-blue-200 font-bold uppercase">BKQuiz Thí sinh</span>
+            <span className="text-[10px] text-blue-200 font-bold uppercase">Người chơi</span>
           </div>
         </div>
 
@@ -184,7 +192,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
             Bạn đã sẵn sàng!
           </h2>
           <p className="text-blue-200 text-sm max-w-xs font-bold">
-            Hãy theo dõi màn hình của Host hoặc chờ câu hỏi bắt đầu trên máy.
+            Bạn đã vào phòng. Chờ chủ phòng bắt đầu nhé!
           </p>
 
           <div className="bg-black/30 px-5 py-2.5 rounded-lg font-black text-white text-xs border border-white/10">
@@ -217,7 +225,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
               Thời gian: <span className="text-[#fdb913] font-black text-sm">{remainingTime}s</span>
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className={powerUpsEnabled ? "flex items-center gap-2" : "hidden"}>
               {!isTrueFalse && (
                 <button
                   type="button"
@@ -262,11 +270,11 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                 {questionTitle || "Nội dung câu hỏi đang được trình chiếu..."}
               </h3>
               {questionImageUrl && (
-                <div className="mt-2 flex justify-center max-h-32">
+                <div className="mt-2 flex justify-center max-h-64">
                   <img
                     src={questionImageUrl}
                     alt="Minh họa"
-                    className="max-h-32 rounded-lg object-contain border border-gray-200"
+                    className="max-h-64 rounded-lg object-contain border border-gray-200"
                   />
                 </div>
               )}
@@ -280,7 +288,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                 <button
                   key={btn.id}
                   onClick={() => handleSelectAnswer(btn.id)}
-                  className={`w-full h-full rounded-xl flex items-center justify-center gap-4 transition-all ${btn.theme} active:scale-95 cursor-pointer shadow-lg`}
+                  className={`w-full min-h-24 rounded-xl flex items-center justify-center gap-4 transition-all ${btn.theme} active:scale-95 cursor-pointer shadow-lg`}
                 >
                   <span className="text-4xl text-white drop-shadow-md">{btn.icon}</span>
                   <span className="text-3xl text-white font-black tracking-wider">{btn.text}</span>
@@ -288,7 +296,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 flex-1 min-h-[220px]">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 flex-1 min-h-[280px]">
               {kahootOptions.map((btn) => {
                 const isEliminated = eliminatedOptions.includes(btn.id);
                 const optText = questionOptions.find((o) => o.id === btn.id)?.text;
@@ -296,9 +304,9 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                 return (
                   <button
                     key={btn.id}
-                    disabled={isEliminated}
+                    disabled={isEliminated || paused}
                     onClick={() => handleSelectAnswer(btn.id)}
-                    className={`w-full h-full rounded-xl flex flex-col items-center justify-center p-3 gap-1.5 transition-all ${
+                    className={`w-full min-h-24 rounded-xl flex flex-col items-center justify-center p-3 gap-1.5 transition-all ${
                       btn.theme
                     } ${
                       isEliminated
@@ -309,7 +317,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                     <span className="text-4xl sm:text-5xl text-white drop-shadow-md select-none">{btn.icon}</span>
                     {/* Hiển thị chữ đáp án nếu bật chế độ đọc câu hỏi trên máy người chơi */}
                     {showQuestionsOnPlayer && optText && (
-                      <span className="text-xs sm:text-sm font-black text-white text-center line-clamp-2 px-1">
+                      <span className="text-xs sm:text-sm font-black text-white text-center break-words px-1">
                         {optText}
                       </span>
                     )}
@@ -325,9 +333,9 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
       {playerState === "SUBMITTED" && (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#001d40]">
           <div className="w-16 h-16 rounded-full border-4 border-white/20 border-t-[#fdb913] animate-spin mb-2" />
-          <h2 className="text-3xl font-black text-white">Đã ghi nhận đáp án!</h2>
+          <h2 className="text-3xl font-black text-white">Đã gửi!</h2>
           <p className="text-blue-200 text-sm font-bold">
-            Hãy nhìn lên màn hình chiếu của Host hoặc chờ kết quả vòng đấu.
+            Chờ những người chơi còn lại nhé.
           </p>
         </div>
       )}
@@ -363,7 +371,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
           )}
 
           <div className="mt-4 bg-black/25 px-6 py-2.5 rounded-lg text-white font-black text-lg border border-white/10">
-            Tổng điểm hiện tại: {totalScore} pts
+            Tổng điểm: {totalScore} pts
           </div>
         </div>
       )}
@@ -373,12 +381,12 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4 bg-[#001d40]">
           <div className="text-5xl">{playerState === "GAME_OVER" ? "🏆" : "👀"}</div>
           <h2 className="text-3xl font-black text-white">
-            {playerState === "GAME_OVER" ? "Trận đấu kết thúc!" : "Bảng Xếp Hạng"}
+            {playerState === "GAME_OVER" ? "Đã kết thúc!" : "Bảng Xếp Hạng"}
           </h2>
           <p className="text-blue-200 text-sm font-bold max-w-xs">
             {playerState === "GAME_OVER"
-              ? "Cảm ơn bạn đã tham gia trận đấu trên BKQuiz!"
-              : "Hãy nhìn lên màn hình chiếu của Host để theo dõi thứ hạng."}
+              ? "Chơi hay lắm! Hẹn gặp lại ở lượt tiếp theo."
+              : "Xem thứ hạng trên màn hình của chủ phòng."}
           </p>
 
           <div className="bg-white text-[#002855] px-6 py-3 rounded-xl font-black text-xl shadow-lg border-b-4 border-gray-300">

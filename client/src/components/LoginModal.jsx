@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
-import BKLogo from './BKLogo';
+import Modal from './Modal';
 import { apiFetch } from '../services/api';
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
@@ -30,17 +29,9 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     finally { setLoading(false); }
   }
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <section role="dialog" aria-modal="true" aria-labelledby="login-title" className="bg-white rounded-xl shadow-2xl max-w-md w-full overflow-hidden">
-        <div className="bg-[#002060] px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <BKLogo className="w-10 h-10" />
-            <h2 id="login-title" className="text-white font-bold text-lg">{isRegister ? 'Đăng ký BKQuiz' : 'Đăng nhập BKQuiz'}</h2>
-          </div>
-          <button onClick={onClose} aria-label="Đóng" className="text-white p-1"><X className="w-5 h-5" /></button>
-        </div>
+    <Modal title={isRegister ? 'Tạo tài khoản' : 'Đăng nhập'} onClose={onClose}>
         <form onSubmit={submit} className="p-6 space-y-4">
-          <p className="text-sm text-gray-600">Dùng tài khoản BKQuiz của bạn. Không yêu cầu email HCMUT.</p>
+          <p className="text-sm text-gray-600">Tạo quiz và lưu kết quả với tài khoản BKQuiz.</p>
           {error && <p role="alert" className="text-sm text-red-700 bg-red-50 p-3 rounded">{error}</p>}
           {isRegister && <div>
             <label htmlFor="login-name" className="block text-sm font-semibold mb-1">Họ và tên</label>
@@ -57,7 +48,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
           <button disabled={loading} className="w-full bg-[#0275b8] text-white font-bold p-2.5 rounded-lg disabled:opacity-50">{loading ? 'Đang xử lý…' : isRegister ? 'Đăng ký' : 'Đăng nhập'}</button>
           <button type="button" onClick={() => { setIsRegister(!isRegister); setError(''); }} className="text-sm text-[#0275b8] hover:underline">{isRegister ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký'}</button>
         </form>
-      </section>
-    </div>
+    </Modal>
   );
 }

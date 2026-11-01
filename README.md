@@ -26,6 +26,18 @@ Không thể tự xóa hay tự hạ quyền tài khoản đang đăng nhập. T
 - Dữ liệu JSON mặc định nằm cùng mã nguồn và có thể bị thay thế khi deploy. Muốn giữ dữ liệu, đặt `DATA_DIR` trỏ tới thư mục lưu trữ bền vững, có sẵn `users.json` và `quizzes.json`. Không ghi đè dữ liệu đang dùng bằng file seed mỗi lần deploy.
 - Phòng thi và lịch sử trận đang lưu trong bộ nhớ; chưa hỗ trợ nhiều server instance dùng chung phiên/phòng.
 
+## Điều khiển trò chơi
+
+- Trong thư viện, chọn **Chơi ngay → Cài đặt** ở phòng chờ: đảo câu/đáp án, hiện câu hỏi trên máy người chơi, điểm tốc độ, thưởng chuỗi đúng, trợ giúp 50:50/x2 và thời gian chung (hoặc giữ thời gian từng câu).
+- Cài đặt chỉ áp dụng cho lượt chơi, không sửa bộ câu hỏi đã lưu. Khi bắt đầu, các cài đặt được khóa. Đáp án sau khi đảo vẫn khớp màu/nút của mọi người chơi.
+- Khi đang trả lời, chủ phòng có thể **Tạm dừng / Tiếp tục**. Máy chủ dừng đồng hồ, khóa nhận đáp án và loại thời gian tạm dừng khỏi điểm tốc độ.
+- **Kết thúc sớm** có hộp xác nhận, giữ điểm đã ghi nhận, chuyển tất cả người chơi tới kết quả và cho tải Excel. Nếu kết thúc khi mới giới thiệu câu hỏi, câu chưa mở sẽ không được ghi là đã chơi.
+- Bấm QR ở phòng chờ để phóng to giữa màn hình. Đóng bằng nút ✕ hoặc Escape.
+- Các thông báo/xác nhận dùng hộp thoại chung, có quản lý focus và khóa cuộn nền. Giao diện hẹp dùng thẻ cho bảng quản lý, nội dung câu hỏi/đáp án dài được xuống dòng và cuộn được.
+- Đã hoàn tác tính năng nhập PDF. Tạo/chỉnh quiz bằng trình soạn câu hỏi.
+
+Chủ phòng ngắt kết nối khi đang chơi sẽ đóng phòng; hiện chưa có cơ chế nối lại lượt chơi sau mất kết nối. Báo cáo của lượt đã kết thúc vẫn giữ trong bộ nhớ tới khi server khởi động lại.
+
 ## Chạy local
 
 Cần Node.js 22.12+ hoặc 24.

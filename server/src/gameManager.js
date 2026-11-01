@@ -1,3 +1,4 @@
+import { normalizeSettings, shuffle } from "./gameSettings.js";
 import xlsx from "xlsx";
 
 export class GameManager {
@@ -20,7 +21,11 @@ export class GameManager {
     const room = {
       pin,
       hostSocketId,
-      quiz,
+      quiz: structuredClone(quiz),
+      settings: normalizeSettings({ showQuestionsOnPlayerScreen: quiz?.showQuestionsOnPlayerScreen !== false }),
+      introTimer: null,
+      pausedAt: null,
+      pausedDuration: 0,
       showQuestionsOnPlayerScreen: quiz?.showQuestionsOnPlayerScreen !== false,
       status: "LOBBY",
       currentQuestionIndex: -1,
@@ -43,6 +48,7 @@ export class GameManager {
   getActiveRooms() {
     const list = [];
     for (const room of this.rooms.values()) {
+      if (room.status === "GAME_OVER") continue;
       list.push({
         pin: room.pin,
         quizTitle: room.quiz?.title || "Chưa đặt tên",
@@ -56,6 +62,8 @@ export class GameManager {
   }
 
   addPlayer(pin, socketId, nickname, avatar) {
+    if (typeof nickname !== "string" || !nickname.trim() || nickname.length > 25) return { error: "Biệt danh cần từ 1 đến 25 ký tự." };
+    if (this.playerSocketMap.has(socketId)) return { error: "Bạn đã ở trong một phòng." };
     const room = this.rooms.get(pin);
     if (!room) return { error: "Không tìm thấy phòng với mã PIN này!" };
     if (room.status !== "LOBBY") return { error: "Trò chơi đã bắt đầu hoặc đã kết thúc!" };
@@ -75,8 +83,8 @@ export class GameManager {
       score: 0,
       streak: 0,
       powerUps: {
-        fiftyFifty: 1,
-        doublePoints: 1
+        fiftyFifty: room.settings.powerUps ? 1 : 0,
+        doublePoints: room.settings.powerUps ? 1 : 0
       }
     };
 
@@ -86,33 +94,78 @@ export class GameManager {
     return { room, player };
   }
 
-  removePlayer(socketId) {
-    const mapping = this.playerSocketMap.get(socketId);
-    if (!mapping) return;
-
-    const { pin, playerId } = mapping;
+  closeRoom(pin) {
     const room = this.rooms.get(pin);
-    this.playerSocketMap.delete(socketId);
+    if (!room) return;
+    clearInterval(room.questionTimer);
+    clearTimeout(room.introTimer);
+    this.io.to(pin).emit("room_closed", { message: "Chủ phòng đã đóng trò chơi." });
+    for (const player of room.players.values()) this.playerSocketMap.delete(player.socketId);
+    this.io.in?.(pin).socketsLeave?.(pin);
+    this.rooms.delete(pin);
+  }
 
-    if (room) {
+  removePlayer(socketId) {
+    for (const room of this.rooms.values()) {
       if (room.hostSocketId === socketId) {
-        this.io.to(pin).emit("room_closed", { message: "Chủ phòng đã thoát trò chơi!" });
-        if (room.questionTimer) clearInterval(room.questionTimer);
-        this.rooms.delete(pin);
-      } else {
-        room.players.delete(playerId);
-        this.io.to(room.hostSocketId).emit("player_left", {
-          playerId,
-          players: Array.from(room.players.values())
-        });
+        // Completed reports remain available after the host leaves.
+        if (room.status !== "GAME_OVER") this.closeRoom(room.pin);
       }
     }
+    const mapping = this.playerSocketMap.get(socketId);
+    if (!mapping) return;
+    const room = this.rooms.get(mapping.pin);
+    this.playerSocketMap.delete(socketId);
+    if (!room) return;
+    if (room.status === "LOBBY") room.players.delete(mapping.playerId);
+    else if (room.players.has(mapping.playerId)) room.players.get(mapping.playerId).disconnected = true;
+    this.io.to(room.hostSocketId).emit("player_left", { players: [...room.players.values()] });
+  }
+
+  updateSettings(pin, settings) {
+    const room = this.rooms.get(pin);
+    if (!room || room.status !== "LOBBY") return;
+    room.settings = normalizeSettings(settings, room.settings);
+    room.showQuestionsOnPlayerScreen = room.settings.showQuestionsOnPlayerScreen;
+    for (const player of room.players.values()) {
+      player.powerUps = { fiftyFifty: room.settings.powerUps ? 1 : 0, doublePoints: room.settings.powerUps ? 1 : 0 };
+    }
+    this.io.to(pin).emit("room_settings", room.settings);
+  }
+
+  pauseGame(pin) {
+    const room = this.rooms.get(pin);
+    if (!room || room.status !== "QUESTION_ACTIVE") return;
+    room.status = "PAUSED";
+    room.pausedAt = Date.now();
+    this.io.to(pin).emit("game_paused", { paused: true });
+  }
+
+  resumeGame(pin) {
+    const room = this.rooms.get(pin);
+    if (!room || room.status !== "PAUSED") return;
+    room.pausedDuration += Date.now() - room.pausedAt;
+    room.pausedAt = null;
+    room.status = "QUESTION_ACTIVE";
+    this.io.to(pin).emit("game_paused", { paused: false });
+  }
+
+  stopGame(pin) {
+    const room = this.rooms.get(pin);
+    if (!room || room.status === "GAME_OVER" || room.status === "LOBBY") return;
+    if (["QUESTION_ACTIVE", "PAUSED"].includes(room.status)) this.endCurrentQuestion(room);
+    this.endGame(room, true);
   }
 
   startQuiz(pin) {
     const room = this.rooms.get(pin);
-    if (!room || room.status !== "LOBBY") return;
-
+    if (!room || room.status !== "LOBBY" || !room.players.size || !room.quiz.questions.length) return;
+    if (room.settings.randomizeQuestions) room.quiz.questions = shuffle(room.quiz.questions);
+    room.quiz.questions = room.quiz.questions.map(q => ({
+      ...q,
+      timeLimit: room.settings.timeLimit || q.timeLimit,
+      options: (room.settings.randomizeAnswers && q.type !== 'TRUE_FALSE' ? shuffle(q.options) : q.options).map((o, id) => ({ ...o, id }))
+    }));
     room.currentQuestionIndex = 0;
     this.showQuestionIntro(room);
   }
@@ -132,7 +185,7 @@ export class GameManager {
       showQuestionsOnPlayer: room.showQuestionsOnPlayerScreen !== false
     });
 
-    setTimeout(() => {
+    room.introTimer = setTimeout(() => {
       if (this.rooms.has(room.pin) && room.status === "QUESTION_INTRO") {
         this.activateQuestion(room);
       }
@@ -144,6 +197,7 @@ export class GameManager {
     const currentQ = room.quiz.questions[room.currentQuestionIndex];
     room.questionRemainingTime = currentQ.timeLimit;
     room.questionStartTime = Date.now();
+    room.pausedDuration = 0;
 
     this.io.to(room.hostSocketId).emit("question_start_host", {
       question: currentQ,
@@ -173,6 +227,7 @@ export class GameManager {
 
     if (room.questionTimer) clearInterval(room.questionTimer);
     room.questionTimer = setInterval(() => {
+      if (room.status !== "QUESTION_ACTIVE") return;
       room.questionRemainingTime -= 1;
       this.io.to(room.pin).emit("timer_tick", { remaining: room.questionRemainingTime });
 
@@ -196,13 +251,16 @@ export class GameManager {
     if (!player) return;
 
     const currentQ = room.quiz.questions[room.currentQuestionIndex];
-    const timeSpent = (Date.now() - room.questionStartTime) / 1000;
+    const timeSpent = (Date.now() - room.questionStartTime - room.pausedDuration) / 1000;
     const selectedOption = currentQ.options.find((opt) => opt.id === optionId);
-    const isCorrect = selectedOption ? selectedOption.isCorrect : false;
+    if (!selectedOption) return;
+    const isCorrect = selectedOption.isCorrect;
+    const doubleActive = room.settings.powerUps && usedDouble && player.powerUps.doublePoints > 0;
+    if (doubleActive) player.powerUps.doublePoints -= 1;
 
     let pointsEarned = 0;
     if (isCorrect) {
-      const speedFactor = Math.max(0.5, 1 - timeSpent / (currentQ.timeLimit * 2));
+      const speedFactor = room.settings.speedScoring ? Math.max(0.5, 1 - timeSpent / (currentQ.timeLimit * 2)) : 1;
       let basePoints = Math.round(currentQ.points * speedFactor);
 
       player.streak += 1;
@@ -211,11 +269,10 @@ export class GameManager {
       if (player.streak >= 3) streakBonus = 250;
       if (player.streak >= 5) streakBonus = 500;
 
-      pointsEarned = basePoints + streakBonus;
+      pointsEarned = basePoints + (room.settings.streakBonus ? streakBonus : 0);
 
-      if (usedDouble && player.powerUps.doublePoints > 0) {
+      if (doubleActive) {
         pointsEarned *= 2;
-        player.powerUps.doublePoints -= 1;
       }
 
       player.score += pointsEarned;
@@ -251,7 +308,7 @@ export class GameManager {
     if (!room || room.status !== "QUESTION_ACTIVE") return;
 
     const player = room.players.get(playerId);
-    if (!player || player.powerUps.fiftyFifty <= 0) return;
+    if (!room.settings.powerUps || room.currentAnswers.has(playerId) || !player || player.powerUps.fiftyFifty <= 0) return;
 
     const currentQ = room.quiz.questions[room.currentQuestionIndex];
     if (currentQ.type === "TRUE_FALSE") return;
@@ -266,6 +323,8 @@ export class GameManager {
   }
 
   endCurrentQuestion(room) {
+    if (!["QUESTION_ACTIVE", "PAUSED"].includes(room.status)) return;
+    clearInterval(room.questionTimer);
     room.status = "QUESTION_RESULT";
     const currentQ = room.quiz.questions[room.currentQuestionIndex];
 
@@ -303,6 +362,7 @@ export class GameManager {
 
     for (const player of room.players.values()) {
       const ans = room.currentAnswers.get(player.id);
+      if (!ans) player.streak = 0;
       this.io.to(player.socketId).emit("question_result_player", {
         isCorrect: ans ? ans.isCorrect : false,
         pointsEarned: ans ? ans.pointsEarned : 0,
@@ -314,7 +374,7 @@ export class GameManager {
 
   showLeaderboard(pin) {
     const room = this.rooms.get(pin);
-    if (!room) return;
+    if (!room || room.status !== "QUESTION_RESULT") return;
 
     room.status = "LEADERBOARD";
     const sortedPlayers = Array.from(room.players.values()).sort((a, b) => b.score - a.score);
@@ -327,7 +387,7 @@ export class GameManager {
 
   nextQuestion(pin) {
     const room = this.rooms.get(pin);
-    if (!room) return;
+    if (!room || room.status !== "LEADERBOARD") return;
 
     room.currentQuestionIndex += 1;
     if (room.currentQuestionIndex < room.quiz.questions.length) {
@@ -337,11 +397,16 @@ export class GameManager {
     }
   }
 
-  endGame(room) {
+  endGame(room, endedEarly = false) {
+    if (room.status === "GAME_OVER") return;
+    clearInterval(room.questionTimer);
+    clearTimeout(room.introTimer);
+    room.endedEarly = endedEarly;
     room.status = "GAME_OVER";
     const sortedPlayers = Array.from(room.players.values()).sort((a, b) => b.score - a.score);
 
     this.io.to(room.pin).emit("game_over", {
+      endedEarly,
       podium: {
         first: sortedPlayers[0] || null,
         second: sortedPlayers[1] || null,

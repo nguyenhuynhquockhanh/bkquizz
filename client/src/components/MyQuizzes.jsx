@@ -1,3 +1,4 @@
+import { notify, askConfirm } from "../services/dialogs";
 import { apiFetch as fetch, downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Edit, Trash2, Play, Download, BookOpen, HelpCircle, Monitor } from "lucide-react";
@@ -34,18 +35,18 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
   }, [backendUrl, user?.id]);
 
   const handleDeleteQuiz = async (quizId, title) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa bộ đề: "${title}" không?`)) return;
+    if (!await askConfirm(`Bạn có chắc chắn muốn xóa bộ đề: "${title}" không?`)) return;
 
     try {
       const res = await fetch(`${backendUrl}/api/quizzes/${quizId}`, {
         method: "DELETE"
       });
       if (res.ok) {
-        alert("Đã xóa bộ đề thành công!");
+        notify("Đã xóa quiz.");
         fetchMyQuizzes();
       }
     } catch (_err) {
-      alert("Lỗi khi xóa bộ đề!");
+      notify("Lỗi khi xóa bộ đề!");
     }
   };
 
@@ -58,13 +59,13 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
         <div className="bg-white rounded-xl p-6 sm:p-8 shadow-sm border-b-4 border-gray-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <span className="px-3 py-1 rounded bg-blue-100 text-[#002855] font-black text-xs uppercase tracking-wider">
-              Cổng Quản Lý Ngân Hàng Đề Thi • HCMUT
+              Thư viện của bạn
             </span>
             <h1 className="text-3xl font-black text-gray-900 mt-1">
-              Danh sách đề thi của {user?.name || "bạn"}
+              Quiz của {user?.name || "bạn"}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
-              Quản lý các bộ câu hỏi trắc nghiệm, cấu hình hiển thị và mở phòng thi trực tuyến.
+              Tạo câu hỏi, mời bạn bè và bắt đầu chơi.
             </p>
           </div>
 
@@ -73,7 +74,7 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
             className="px-6 py-3 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green flex items-center gap-2 shadow"
           >
             <PlusCircle className="w-5 h-5 stroke-[3]" />
-            Tạo đề thi mới
+            Tạo quiz
           </button>
         </div>
 
@@ -121,7 +122,7 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
                 : "border-transparent text-gray-400 hover:text-gray-700"
             }`}
           >
-            Lịch sử phòng thi ({history.length})
+            Lịch sử phòng chơi ({history.length})
           </button>
         </div>
 
@@ -142,11 +143,11 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="responsive-table w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 text-xs font-black uppercase text-gray-500">
                       <th className="py-3 px-4">Ảnh bìa</th>
-                      <th className="py-3 px-4">Tên Bộ Đề</th>
+                      <th className="py-3 px-4">Tên quiz</th>
                       <th className="py-3 px-4">Số câu</th>
                       <th className="py-3 px-4">Đọc câu hỏi trên máy người chơi</th>
                       <th className="py-3 px-4 text-right">Thao tác</th>
@@ -155,25 +156,25 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
                   <tbody className="divide-y divide-gray-100 font-bold text-sm">
                     {quizzes.map((quiz) => (
                       <tr key={quiz.id} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 w-20">
+                        <td data-label="Ảnh bìa" className="py-3 px-4 w-20">
                           <img
                             src={quiz.coverImage}
                             alt={quiz.title}
                             className="w-14 h-10 object-cover rounded shadow-sm border border-gray-200"
                           />
                         </td>
-                        <td className="py-3 px-4">
+                        <td data-label="Tên quiz" className="py-3 px-4">
                           <div className="font-black text-gray-900 text-base">{quiz.title}</div>
                           <div className="text-xs text-gray-400 font-normal line-clamp-1">
-                            {quiz.description || "Bộ câu hỏi trắc nghiệm tương tác BKQuiz."}
+                            {quiz.description || "Sẵn sàng cho lượt chơi tiếp theo."}
                           </div>
                         </td>
-                        <td className="py-3 px-4">
+                        <td data-label="Số câu" className="py-3 px-4">
                           <span className="px-2.5 py-1 rounded bg-blue-50 text-[#0052cc] font-black text-xs">
                             {quiz.questions?.length || 0} câu
                           </span>
                         </td>
-                        <td className="py-3 px-4">
+                        <td data-label="Đọc câu hỏi trên máy người chơi" className="py-3 px-4">
                           {quiz.showQuestionsOnPlayerScreen !== false ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-green-50 text-green-700 text-xs font-bold">
                               <Monitor className="w-3.5 h-3.5" /> Bật hiển thị
@@ -184,15 +185,15 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td data-label="Thao tác" className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => onHostQuiz(quiz.id)}
-                              title="Mở phòng Host cho sinh viên nhập PIN vào thi"
+                              title="Mở phòng chơi"
                               className="px-3.5 py-1.5 rounded font-black text-xs uppercase bg-[#26890c] text-white hover:bg-[#1b6308] flex items-center gap-1 shadow-sm"
                             >
                               <Play className="w-3.5 h-3.5 fill-current" />
-                              Mở Phòng
+                              Chơi ngay
                             </button>
 
                             <button
@@ -221,16 +222,16 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
           </div>
         )}
 
-        {/* TAB 2: LỊCH SỬ PHÒNG THI */}
+        {/* TAB 2: LỊCH SỬ PHÒNG CHƠI */}
         {activeTab === "history" && (
           <div className="bg-white rounded-xl shadow-sm border-b-4 border-gray-300 overflow-hidden">
             {history.length === 0 ? (
               <div className="p-8 text-center text-gray-400 font-bold">
-                Chưa có phòng thi nào hoàn thành trận đấu.
+                Chưa có lượt chơi nào. Hãy mở một phòng!
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="responsive-table w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200 text-xs font-black uppercase text-gray-500">
                       <th className="py-3 px-4">Mã PIN</th>
@@ -243,19 +244,19 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
                   <tbody className="divide-y divide-gray-100 font-bold text-sm">
                     {history.map((h, idx) => (
                       <tr key={idx} className="hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 font-black text-[#0052cc]">{h.pin}</td>
-                        <td className="py-3 px-4 font-black text-gray-900">{h.quizTitle}</td>
-                        <td className="py-3 px-4">
+                        <td data-label="Mã PIN" className="py-3 px-4 font-black text-[#0052cc]">{h.pin}</td>
+                        <td data-label="Tên Trận Đấu" className="py-3 px-4 font-black text-gray-900">{h.quizTitle}</td>
+                        <td data-label="Số Người Tham Gia" className="py-3 px-4">
                           <span className="px-2 py-0.5 rounded bg-blue-50 text-[#0052cc] font-black text-xs">
                             {h.playerCount} người
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-xs text-gray-500">
+                        <td data-label="Thời gian" className="py-3 px-4 text-xs text-gray-500">
                           {new Date(h.endedAt).toLocaleString("vi-VN")}
                         </td>
-                        <td className="py-3 px-4 text-right">
+                        <td data-label="Báo Cáo" className="py-3 px-4 text-right">
                           <button
-                            onClick={() => downloadReport(h.pin).catch((err) => alert(err.message))}
+                            onClick={() => downloadReport(h.pin).catch((err) => notify(err.message))}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded font-black text-xs uppercase bg-[#26890c] text-white hover:bg-[#1b6308] shadow-sm"
                           >
                             <Download className="w-3.5 h-3.5" />

@@ -5,7 +5,7 @@ import BKLogo from "./BKLogo";
 export default function Navbar({ currentView, setView, currentUser, onOpenLogin, onLogout }) {
   return (
     <header className="bg-[#0275b8] border-b border-[#015d94] shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 min-h-16 py-3 flex flex-wrap items-center justify-between gap-3">
         {/* Brand Logo Bách Khoa HCM */}
         <div
           onClick={() => setView("home")}
@@ -15,7 +15,7 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
         </div>
 
         {/* Navigation Items (Chuẩn giao diện LMS Bách Khoa) */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="nav-actions flex flex-wrap items-center gap-1 sm:gap-3">
           <button
             onClick={() => setView("home")}
             className={`px-3 py-1.5 rounded text-xs font-bold transition-colors ${
@@ -51,7 +51,7 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
                 }`}
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Tạo đề thi</span>
+                <span className="hidden sm:inline">Tạo quiz</span>
                 <span className="sm:hidden">Tạo</span>
               </button>
 
@@ -73,7 +73,7 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
               {/* Profile & Đăng xuất */}
               <div className="flex items-center gap-2 pl-2 border-l border-white/30">
                 <div className="hidden md:flex flex-col text-right leading-tight">
-                  <span className="text-xs font-bold text-white">Hi, {currentUser.name}</span>
+                  <span className="text-xs font-bold text-white">{currentUser.name}</span>
                   <span className="text-[10px] text-blue-100 opacity-80">{currentUser.email}</span>
                 </div>
 

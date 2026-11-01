@@ -1,3 +1,5 @@
+import DialogHost from "./components/DialogHost";
+import { notify } from "./services/dialogs";
 import React, { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
@@ -56,9 +58,9 @@ export default function App() {
       setCurrentView("player");
     });
 
-    socket.on('host_error', ({ message }) => alert(message));
+    socket.on('host_error', ({ message }) => notify(message));
     socket.on("join_error", ({ message }) => {
-      alert(message || "Không thể tham gia phòng!");
+      notify(message || "Không thể tham gia phòng!");
     });
 
     return () => {
@@ -78,6 +80,8 @@ export default function App() {
   };
 
   const handleLeaveToHome = () => {
+    if (roomData) socket.emit("close_room", { pin: roomData.pin });
+    if (playerData) socket.emit("leave_room");
     setRoomData(null);
     setPlayerData(null);
     setEditingQuiz(null);
@@ -95,7 +99,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try { await apiFetch((import.meta.env.VITE_BACKEND_URL || '') + '/api/auth/logout', { method: 'POST' }); }
-    catch { alert('Không thể kết nối máy chủ để thu hồi phiên đăng nhập.'); }
+    catch { notify('Không thể kết nối máy chủ để thu hồi phiên đăng nhập.'); }
     setToken(null);
     socket.disconnect().connect();
     setCurrentUser(null);
@@ -120,13 +124,14 @@ export default function App() {
       {currentView !== "host" && currentView !== "player" && (
         <Navbar
           currentView={currentView}
-          setView={setCurrentView}
+          setView={view => { if (view === "editor") setEditingQuiz(null); setCurrentView(view); }}
           currentUser={currentUser}
           onOpenLogin={() => setIsLoginModalOpen(true)}
           onLogout={handleLogout}
         />
       )}
 
+      <DialogHost />
       <main className="flex-1 flex flex-col">
         {currentView === 'admin' && currentUser?.role !== 'admin' && (
           <div className="p-8 text-center space-y-4">

@@ -1,5 +1,47 @@
 @import "tailwindcss";
 
+html { scroll-behavior: smooth; }
+html, body, #root { min-width: 0; min-height: 100%; }
+*, *::before, *::after { box-sizing: border-box; }
+:where(.flex, .grid) > * { min-width: 0; }
+:where(h1, h2, h3, p, td, button, label) { overflow-wrap: anywhere; }
+img { max-width: 100%; }
+button:not(:disabled), select, summary { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+button:focus-visible, a:focus-visible { outline: 3px solid #f5c542; outline-offset: 3px; }
+input:not([type=checkbox]):not([type=radio]), select, textarea { max-width: 100%; min-width: 0; }
+.bk-modal { margin: auto; width: min(32rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 0; border-radius: 1.25rem; padding: 1.5rem; color: #1f2937; background: white; box-shadow: 0 24px 80px #00173666; }
+.bk-modal::backdrop { background: #001736aa; backdrop-filter: blur(5px); }
+.qr-code { width: min(360px, 100%, max(120px, calc(100dvh - 280px))); }
+.player-screen { min-height: 100dvh; }
+.game-controls { position: sticky; top: 0; z-index: 20; }
+.overflow-x-auto { max-width: 100%; overscroll-behavior-x: contain; }
+@media (max-width: 639px) {
+  .nav-actions { width: 100%; justify-content: space-between; }
+  .nav-actions button { min-height: 44px; }
+  input:not([type=checkbox]):not([type=radio]), textarea, select { font-size: 16px; }
+  .host-screen .text-4xl { font-size: 1.75rem; }
+  .host-screen .text-5xl { font-size: 2.5rem; }
+  .host-screen .p-8 { padding: 1rem; }
+  .host-screen .gap-5 { gap: .75rem; }
+  .host-screen .text-xl { font-size: 1rem; }
+  .host-screen .p-6 { padding: 1rem; }
+  .overflow-x-auto table { min-width: 620px; }
+  .responsive-table { display: block; min-width: 0 !important; }
+  .responsive-table thead { display: none; }
+  .responsive-table tbody { display: block; }
+  .responsive-table tr { display: block; padding: .75rem; border-bottom: 1px solid #e5e7eb; }
+  .responsive-table td { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: .75rem; padding: .65rem .25rem; text-align: right; }
+  .responsive-table td::before { content: attr(data-label); flex: 0 0 34%; text-align: left; font-size: .7rem; color: #64748b; font-weight: 700; }
+  .responsive-table td > * { min-width: 0; }
+  .responsive-table td .flex { flex-wrap: wrap; }
+  .bk-modal { padding: 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
 @layer base {
   body {
     background-color: #f8f9fa;
