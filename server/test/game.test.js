@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GameManager } from '../src/gameManager.js';
+import { GameManager, RECONNECT_GRACE_MS } from '../src/gameManager.js';
 
 function fixture(t) {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'] });
@@ -24,6 +24,61 @@ test('settings apply to an isolated round, reindex answers, and lock after start
   assert.equal(room.status,'QUESTION_ACTIVE');
   assert.equal(room.players.get('p_player').powerUps.doublePoints,1);
 });
+
+test('host refresh pauses play and reattaches only with matching owner and resume secret', t => {
+  const {game,room}=fixture(t);room.ownerId='owner';
+  game.startQuiz(room.pin);t.mock.timers.tick(3000);t.mock.timers.tick(2000);
+  const session={pin:room.pin,role:'host',resumeToken:room.hostResumeToken};
+  game.disconnect('host');assert.equal(room.status,'PAUSED');
+  const remaining=room.questionRemainingTime;t.mock.timers.tick(20000);
+  assert.equal(room.questionRemainingTime,remaining);
+  assert.equal(game.resumeSession(session,'new-host','intruder'),null);
+  assert.equal(game.resumeSession({...session,resumeToken:'wrong'},'new-host','owner'),null);
+  const restored=game.resumeSession(session,'new-host','owner');
+  assert.equal(restored.data.snapshot.status,'PAUSED');assert.equal(room.hostSocketId,'new-host');
+  game.disconnect('host');t.mock.timers.tick(RECONNECT_GRACE_MS);
+  assert.ok(game.getRoom(room.pin));game.resumeGame(room.pin);game.submitAnswer('player',2);
+  assert.equal(room.players.get('p_player').score,967);
+});
+
+test('player refresh retains assists, choice, submitted answer and score without exposing answer keys', t => {
+  const {game,room}=fixture(t);game.addPlayer(room.pin,'other','Other');
+  game.updateSettings(room.pin,{speedScoring:false});game.startQuiz(room.pin);t.mock.timers.tick(3000);
+  game.useFiftyFifty('player');game.selectDoublePoints('player',true);
+  const session={pin:room.pin,role:'player',resumeToken:room.playerResumeTokens.get('p_player')};
+  game.disconnect('player');
+  assert.equal(game.resumeSession({...session,resumeToken:room.hostResumeToken},'attacker'),null);
+  const restored=game.resumeSession(session,'player-new');
+  assert.equal(room.players.size,2);assert.equal(restored.data.player.id,'p_player');
+  assert.equal(restored.data.snapshot.eliminatedOptions.length,2);assert.equal(restored.data.snapshot.useDouble,true);
+  assert.ok(restored.data.snapshot.options.every(o=>!('isCorrect' in o)));
+  assert.equal(restored.data.snapshot.lastResult,null);
+  room.players.get('p_player').streak=2;
+  game.submitAnswer('player-new',2,true);game.disconnect('player-new');
+  const submitted=game.resumeSession(session,'player-again');
+  assert.equal(submitted.data.snapshot.playerState,'SUBMITTED');
+  assert.equal(submitted.data.snapshot.streak,2);
+  assert.equal(submitted.data.snapshot.totalScore,0);
+  game.submitAnswer('player-again',2,true);assert.equal(room.players.get('p_player').score,2000);
+  game.stopGame(room.pin);game.disconnect('player-again');
+  const final=game.resumeSession(session,'player-final');
+  assert.equal(final.data.snapshot.playerState,'GAME_OVER');assert.equal(final.data.snapshot.totalScore,2000);
+  assert.deepEqual(final.data.snapshot.powerUps,{fiftyFifty:0,doublePoints:0});
+});
+
+test('reconnect grace expires, explicit exit stays immediate, and intro resumes safely', t => {
+  const {game,room}=fixture(t);room.ownerId='owner';
+  game.startQuiz(room.pin);game.disconnect('host');t.mock.timers.tick(5000);
+  assert.equal(room.status,'QUESTION_INTRO');
+  game.resumeSession({pin:room.pin,role:'host',resumeToken:room.hostResumeToken},'new-host','owner');
+  t.mock.timers.tick(3000);assert.equal(room.status,'QUESTION_ACTIVE');
+  game.disconnect('new-host');t.mock.timers.tick(RECONNECT_GRACE_MS-1);assert.ok(game.getRoom(room.pin));
+  t.mock.timers.tick(1);assert.equal(game.getRoom(room.pin),undefined);
+  const second=game.createRoom('second',room.quiz);game.addPlayer(second.pin,'waiting','Waiting');
+  game.disconnect('waiting');assert.equal(second.players.size,1);
+  t.mock.timers.tick(RECONNECT_GRACE_MS);assert.equal(second.players.size,0);
+  game.removePlayer('second');assert.equal(game.getRoom(second.pin),undefined);
+});
 test('pause freezes timer, rejects answers and excludes pause from speed scoring', t => {
   const {game, room} = fixture(t);game.startQuiz(room.pin);t.mock.timers.tick(3000);
   t.mock.timers.tick(2000);game.pauseGame(room.pin);
@@ -44,7 +99,7 @@ test('ending early preserves partial scores once and stops timers and transition
   assert.equal(events.find(e=>e.event==='game_over').data.endedEarly,true);
   assert.ok(game.exportExcelReport(room.pin).length>0);
 });
-test('intro can end early and host disconnect closes waiting rooms', t => {
+test('intro can end early and explicit host exit closes waiting rooms', t => {
   const {game,room,events}=fixture(t);game.startQuiz(room.pin);game.stopGame(room.pin);t.mock.timers.tick(5000);
   assert.equal(room.status,'GAME_OVER');assert.equal(room.historyLogs.length,0);
   assert.equal(events.filter(e=>e.event==='question_start_player').length,0);

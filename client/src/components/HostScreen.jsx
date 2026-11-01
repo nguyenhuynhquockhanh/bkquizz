@@ -10,17 +10,18 @@ import { sounds } from "../services/sound";
 import BKLogo from "./BKLogo";
 
 export default function HostScreen({ roomData, socket, onLeave }) {
-  const [roomState, setRoomState] = useState("LOBBY");
-  const [players, setPlayers] = useState([]);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [questionNumber, setQuestionNumber] = useState(1);
-  const [totalQuestions, setTotalQuestions] = useState(1);
-  const [remainingTime, setRemainingTime] = useState(15);
-  const [answeredCount, setAnsweredCount] = useState(0);
-  const [questionStats, setQuestionStats] = useState([0, 0, 0, 0]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [isLastQuestion, setIsLastQuestion] = useState(false);
-  const [podium, setPodium] = useState({ first: null, second: null, third: null });
+  const snapshot = roomData.snapshot;
+  const [roomState, setRoomState] = useState(snapshot?.status === 'PAUSED' ? 'QUESTION_ACTIVE' : snapshot?.status || 'LOBBY');
+  const [players, setPlayers] = useState(snapshot?.players || []);
+  const [currentQuestion, setCurrentQuestion] = useState(snapshot?.question || null);
+  const [questionNumber, setQuestionNumber] = useState(snapshot?.questionNumber || 1);
+  const [totalQuestions, setTotalQuestions] = useState(snapshot?.totalQuestions || roomData.totalQuestions || 1);
+  const [remainingTime, setRemainingTime] = useState(snapshot?.remainingTime ?? 15);
+  const [answeredCount, setAnsweredCount] = useState(snapshot?.answeredCount || 0);
+  const [questionStats, setQuestionStats] = useState(snapshot?.stats || [0, 0, 0, 0]);
+  const [leaderboard, setLeaderboard] = useState(snapshot?.topPlayers || []);
+  const [isLastQuestion, setIsLastQuestion] = useState(snapshot?.isLastQuestion || false);
+  const [podium, setPodium] = useState(snapshot?.podium || { first: null, second: null, third: null });
   const [floatingReactions, setFloatingReactions] = useState([]);
   const [isMuted, setIsMuted] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
@@ -28,8 +29,8 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const [settings, setSettings] = useState(roomData?.settings || {});
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const [endedEarly, setEndedEarly] = useState(false);
+  const [paused, setPaused] = useState(snapshot?.paused || false);
+  const [endedEarly, setEndedEarly] = useState(snapshot?.endedEarly || false);
   const endEarly = async () => {
     if (await askConfirm('Kết thúc trò chơi ngay? Điểm đã ghi nhận sẽ được giữ lại và mọi người sẽ xem kết quả.')) socket.emit('end_game', { pin: roomData.pin });
   };

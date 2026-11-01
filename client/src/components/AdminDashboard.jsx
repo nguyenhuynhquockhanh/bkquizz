@@ -4,8 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Users, BookOpen, HelpCircle, Activity, ShieldCheck, Download, Trash2, Plus, Search, RefreshCw, Server, CheckCircle2 } from "lucide-react";
 import BKLogo from "./BKLogo";
 
-export default function AdminDashboard({ onBack, currentUser }) {
-  const [activeTab, setActiveTab] = useState("overview"); // overview, quizzes, users, live, history
+export default function AdminDashboard({ onBack, currentUser, activeTab = 'overview', setActiveTab }) {
   const [stats, setStats] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
   const [users, setUsers] = useState([]);

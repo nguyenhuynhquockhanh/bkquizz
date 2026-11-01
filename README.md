@@ -88,7 +88,16 @@ Không thể tự xóa hay tự hạ quyền tài khoản đang đăng nhập. T
 - Các thông báo/xác nhận dùng hộp thoại chung, có quản lý focus và khóa cuộn nền. Giao diện hẹp dùng thẻ cho bảng quản lý, nội dung câu hỏi/đáp án dài được xuống dòng và cuộn được.
 - Đã hoàn tác tính năng nhập PDF. Tạo/chỉnh quiz bằng trình soạn câu hỏi.
 
-Chủ phòng ngắt kết nối khi đang chơi sẽ đóng phòng; hiện chưa có cơ chế nối lại lượt chơi sau mất kết nối. Báo cáo của lượt đã kết thúc vẫn giữ trong bộ nhớ tới khi server khởi động lại.
+### F5, lưu trang và nối lại phòng
+
+- Các trang dùng URL riêng: `/my-quizzes`, `/my-quizzes?tab=history`, `/admin?tab=users`, `/editor?quiz=<id>`. F5 và nút Back/Forward giữ đúng trang, tab và bộ đề đang mở. Trang cần đăng nhập vẫn kiểm tra quyền trước khi hiển thị.
+- Trình soạn quiz lưu bản nháp trong `sessionStorage`, theo tài khoản và bộ đề của tab hiện tại. F5 giữ nội dung chưa lưu và câu đang chỉnh; bấm **Lưu thay đổi** để lưu chính thức lên server. Bản nháp không thay thế việc lưu bộ đề và không đồng bộ sang thiết bị khác.
+- Cả **chủ phòng lẫn người chơi** có thể F5 và tự nối lại phòng. Server gửi lại câu hỏi, thời gian còn lại, điểm, chuỗi đúng, đáp án đã nộp và trạng thái trợ giúp 50:50/x2. Đáp án đã nhận không được nộp lại để cộng điểm lần hai; F5 không cấp lại trợ giúp.
+- Server giữ quyền nối lại tối đa **60 giây** sau mất kết nối. Khi chủ phòng mất kết nối trong câu đang mở, câu hỏi tự tạm dừng; chủ phòng vào lại và bấm **Tiếp tục**. Nếu đang giới thiệu câu hỏi, phần giới thiệu chạy lại khi chủ phòng trở về. Người chơi mất kết nối riêng không làm dừng đồng hồ của cả phòng.
+- Nút **Đóng phòng** hoặc **Thoát về trang chủ** là thoát chủ động; sau đó F5 không tự vào lại. Nếu cùng một phiên được mở trong tab khác, tab cũ được ngắt để tránh hai thiết bị cùng điều khiển một phiên.
+- Trang hiện tại lưu qua URL; mã nối lại ngẫu nhiên lưu trong `sessionStorage`, không đặt vào URL hoặc cookie biệt danh. Chủ phòng phải có cả phiên đăng nhập hợp lệ và mã nối lại đúng. Điểm và quyền trợ giúp do server quyết định.
+
+Cơ chế này xử lý tải lại trang/mất mạng ngắn trong cùng tab, **không khôi phục được phòng sau khi server restart hoặc deploy**. Phòng, phiên đăng nhập và lịch sử vẫn lưu trong RAM; báo cáo của lượt đã kết thúc giữ tới khi server khởi động lại. Mã nguồn: [useRoute.js](client/src/services/useRoute.js), [playSession.js](client/src/services/playSession.js), [gameSnapshot.js](server/src/gameSnapshot.js), [gameManager.js](server/src/gameManager.js).
 
 ---
 
@@ -119,9 +128,11 @@ npm test --prefix server
 npm run build --prefix client
 ```
 
-Các bài test trong [server/test](server/test) kiểm tra đăng nhập, quyền user/admin, sở hữu đề, thu hồi phiên; cài đặt lượt chơi, đảo đáp án, tạm dừng/tiếp tục, kết thúc sớm, trợ giúp dùng một lần và ngắt kết nối host. Có thêm kiểm tra cache (bao gồm `304`), HSTS và cookie biệt danh. Test dùng dữ liệu tạm hoặc trạng thái phòng giả lập, không sửa dữ liệu sử dụng thực tế.
+Các bài test trong [server/test](server/test) kiểm tra đăng nhập, quyền user/admin, sở hữu đề, thu hồi phiên; cài đặt lượt chơi, đảo đáp án, tạm dừng/tiếp tục, kết thúc sớm và trợ giúp dùng một lần. Kiểm tra nối lại bao gồm quyền host, mã phiên sai, giữ điểm/đáp án/trợ giúp, hết thời gian chờ, khôi phục phần giới thiệu và thoát chủ động. Có thêm kiểm tra URL trang/tab, cache (bao gồm `304`), HSTS và cookie biệt danh. Test dùng dữ liệu tạm hoặc trạng thái phòng giả lập, không sửa dữ liệu sử dụng thực tế.
 
 Để thử luồng chơi, mở hai tab: đăng nhập và mở phòng ở tab host; nhập PIN và biệt danh ở tab người chơi. Kiểm tra trả lời, tạm dừng/tiếp tục, kết thúc sớm và tải Excel. Giao diện đã được kiểm tra ở các chiều rộng 320, 390, 768 và 1440 px; đây không phải xác nhận cho mọi thiết bị/trình duyệt.
+
+Để kiểm tra F5: tải lại cả hai tab ở phòng chờ; dùng 50:50/x2 rồi tải lại tab người chơi; tải lại tab host giữa câu và bấm **Tiếp tục**; trả lời rồi tải lại màn hình kết quả. Điểm và trợ giúp phải giữ nguyên. Thử thêm F5 ở tab Lịch sử và khi đang chỉnh một bản nháp chưa lưu.
 
 ---
 

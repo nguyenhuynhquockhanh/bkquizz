@@ -3,10 +3,9 @@ import { apiFetch as fetch, downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Edit, Trash2, Play, Download, BookOpen, HelpCircle, Monitor } from "lucide-react";
 
-export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }) {
+export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz, activeTab = 'quizzes', setActiveTab }) {
   const [quizzes, setQuizzes] = useState([]);
   const [history, setHistory] = useState([]);
-  const [activeTab, setActiveTab] = useState("quizzes");
   const [loading, setLoading] = useState(true);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "";

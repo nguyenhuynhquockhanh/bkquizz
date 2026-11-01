@@ -282,6 +282,7 @@ io.on("connection", (socket) => {
       totalQuestions: quiz.questions.length,
       coverImage: quiz.coverImage,
       settings: room.settings,
+      resumeToken: room.hostResumeToken,
       showQuestionsOnPlayerScreen: room.showQuestionsOnPlayerScreen
     });
   });
@@ -296,6 +297,7 @@ io.on("connection", (socket) => {
     socket.emit("join_success", {
       pin,
       player: result.player,
+      resumeToken: result.room.playerResumeTokens.get(result.player.id),
       quizTitle: result.room.quiz.title,
       settings: result.room.settings,
       showQuestionsOnPlayerScreen: result.room.showQuestionsOnPlayerScreen
@@ -305,6 +307,23 @@ io.on("connection", (socket) => {
       player: result.player,
       players: Array.from(result.room.players.values())
     });
+  });
+
+  socket.on('resume_session', (session, reply) => {
+    if (typeof reply !== 'function') return;
+    if (!session || typeof session !== 'object') return reply({ error: 'Phiên chơi không hợp lệ.' });
+    const result = gameManager.resumeSession(session, socket.id, auth.resolve(socket.handshake.auth?.token)?.id);
+    if (!result) return reply({ error: 'Không thể nối lại phòng. Phiên đã hết hạn hoặc phòng đã đóng.' });
+    if (result.oldSocketId !== socket.id) {
+      const oldSocket = io.sockets.sockets.get(result.oldSocketId);
+      oldSocket?.emit('session_replaced');
+      oldSocket?.leave(result.room.pin);
+      oldSocket?.disconnect(true);
+    }
+    socket.join(result.room.pin);
+    reply({ role: session.role, data: result.data });
+    if (session.role === 'host') io.to(result.room.pin).emit('host_connection', { disconnected: false });
+    else io.to(result.room.hostSocketId).emit('player_joined', { players: [...result.room.players.values()] });
   });
 
   function recordFinished(room) {
@@ -347,6 +366,8 @@ io.on("connection", (socket) => {
     gameManager.useFiftyFifty(socket.id);
   });
 
+  socket.on('select_double_points', ({ enabled } = {}) => gameManager.selectDoublePoints(socket.id, enabled));
+
   socket.on("send_reaction", ({ emoji }) => {
     gameManager.handleReaction(socket.id, emoji);
   });
@@ -364,7 +385,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    gameManager.removePlayer(socket.id);
+    gameManager.disconnect(socket.id);
   });
 });
 

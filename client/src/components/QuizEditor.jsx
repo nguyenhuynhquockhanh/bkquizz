@@ -1,20 +1,23 @@
 import { notify } from "../services/dialogs";
 import { apiFetch as fetch } from "../services/api";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { draftKey, readDraft } from '../services/quizDraft';
 import { Plus, Trash2, ArrowLeft, Clock, Award, Check, Image as ImageIcon, HelpCircle, Monitor, FileText } from "lucide-react";
 
 export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser }) {
-  const [title, setTitle] = useState(editQuizData?.title || "");
-  const [description, setDescription] = useState(editQuizData?.description || "");
+  const storageKey = draftKey(currentUser.id, editQuizData?.id);
+  const [draft] = useState(() => readDraft(storageKey));
+  const [title, setTitle] = useState(draft?.title ?? editQuizData?.title ?? "");
+  const [description, setDescription] = useState(draft?.description ?? editQuizData?.description ?? "");
   const [coverImage, setCoverImage] = useState(
-    editQuizData?.coverImage ||
+    draft?.coverImage ?? editQuizData?.coverImage ??
       "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80"
   );
   const [showQuestionsOnPlayerScreen, setShowQuestionsOnPlayerScreen] = useState(
-    editQuizData?.showQuestionsOnPlayerScreen !== false
+    (draft?.showQuestionsOnPlayerScreen ?? editQuizData?.showQuestionsOnPlayerScreen) !== false
   );
   const [questions, setQuestions] = useState(() =>
-    editQuizData?.questions || [
+    draft?.questions || editQuizData?.questions || [
       {
         id: `q_${Date.now()}`,
         type: "MULTIPLE_CHOICE",
@@ -31,9 +34,16 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
       }
     ]
   );
-  const [activeQIndex, setActiveQIndex] = useState(0);
+  const [activeQIndex, setActiveQIndex] = useState(() => Math.min(Math.max(0, draft?.activeQIndex || 0), questions.length - 1));
   const [isSaving, setIsSaving] = useState(false);
-  const [showMetaSettings, setShowMetaSettings] = useState(false);
+  const [showMetaSettings, setShowMetaSettings] = useState(draft?.showMetaSettings || false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify({ version: 1, title, description, coverImage,
+        showQuestionsOnPlayerScreen, questions, activeQIndex, showMetaSettings }));
+    } catch { /* Storage may be unavailable; saving the quiz to the server still works. */ }
+  }, [storageKey, title, description, coverImage, showQuestionsOnPlayerScreen, questions, activeQIndex, showMetaSettings]);
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
@@ -145,6 +155,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
       });
 
       if (res.ok) {
+        sessionStorage.removeItem(storageKey);
         notify(isEdit ? "Đã cập nhật quiz." : "Đã lưu quiz.");
         onSaved();
       } else {

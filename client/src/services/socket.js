@@ -7,7 +7,7 @@ export const socket = io(SOCKET_URL, {
   auth: (callback) => callback({ token: getToken() }),
   autoConnect: true,
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000
 });
 

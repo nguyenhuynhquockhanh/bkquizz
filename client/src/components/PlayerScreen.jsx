@@ -1,28 +1,28 @@
-import { notify } from "../services/dialogs";
 import React, { useState, useEffect } from "react";
 import { Check, X, Flame, Zap } from "lucide-react";
 import { sounds } from "../services/sound";
 import BKLogo from "./BKLogo";
 
 export default function PlayerScreen({ playerData, socket, onLeave }) {
-  const [playerState, setPlayerState] = useState("LOBBY");
-  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
-  const [currentQuestionType, setCurrentQuestionType] = useState("MULTIPLE_CHOICE");
-  const [questionTitle, setQuestionTitle] = useState("");
-  const [questionImageUrl, setQuestionImageUrl] = useState("");
-  const [questionOptions, setQuestionOptions] = useState([]);
+  const snapshot = playerData.snapshot;
+  const [playerState, setPlayerState] = useState(snapshot?.playerState || 'LOBBY');
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(snapshot?.questionNumber || 1);
+  const [currentQuestionType, setCurrentQuestionType] = useState(snapshot?.questionType || 'MULTIPLE_CHOICE');
+  const [questionTitle, setQuestionTitle] = useState(snapshot?.questionTitle || '');
+  const [questionImageUrl, setQuestionImageUrl] = useState(snapshot?.imageUrl || '');
+  const [questionOptions, setQuestionOptions] = useState(snapshot?.options || []);
   const [showQuestionsOnPlayer, setShowQuestionsOnPlayer] = useState(
     playerData?.showQuestionsOnPlayerScreen !== false
   );
-  const [remainingTime, setRemainingTime] = useState(15);
+  const [remainingTime, setRemainingTime] = useState(snapshot?.remainingTime ?? 15);
   const [powerUps, setPowerUps] = useState(playerData?.player?.powerUps || { fiftyFifty: 1, doublePoints: 1 });
-  const [eliminatedOptions, setEliminatedOptions] = useState([]);
-  const [useDoublePointsThisRound, setUseDoublePointsThisRound] = useState(false);
-  const [lastResult, setLastResult] = useState(null);
-  const [totalScore, setTotalScore] = useState(0);
-  const [currentStreak, setCurrentStreak] = useState(0);
+  const [eliminatedOptions, setEliminatedOptions] = useState(snapshot?.eliminatedOptions || []);
+  const [useDoublePointsThisRound, setUseDoublePointsThisRound] = useState(snapshot?.useDouble || false);
+  const [lastResult, setLastResult] = useState(snapshot?.lastResult || null);
+  const [totalScore, setTotalScore] = useState(snapshot?.totalScore ?? playerData.player.score ?? 0);
+  const [currentStreak, setCurrentStreak] = useState(snapshot?.streak ?? playerData.player.streak ?? 0);
 
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(snapshot?.paused || false);
   const [powerUpsEnabled, setPowerUpsEnabled] = useState(!!playerData?.settings?.powerUps);
   const EMOJIS = ["❤️", "😂", "🔥", "👏", "⚡", "🎓"];
 
@@ -90,10 +90,6 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
 
     socket.on("leaderboard_update", () => setPlayerState("WAITING_NEXT"));
     socket.on("game_over", ({ allPlayers }) => { setPaused(false); setPlayerState("GAME_OVER"); const me = allPlayers?.find(p => p.id === playerData?.player?.id); if (me) setTotalScore(me.score); });
-    socket.on("room_closed", ({ message }) => {
-      notify(message || "Phòng thi đã kết thúc!");
-      onLeave();
-    });
 
     return () => {
       socket.off("game_paused");
@@ -105,7 +101,6 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
       socket.off("question_result_player");
       socket.off("leaderboard_update");
       socket.off("game_over");
-      socket.off("room_closed");
     };
   }, [socket, onLeave, playerState, playerData?.player?.id]);
 
@@ -128,6 +123,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
     if (!paused && powerUps.doublePoints > 0 && playerState === "PLAYING") {
       sounds.playPop();
       setUseDoublePointsThisRound((prev) => !prev);
+      socket.emit('select_double_points', { enabled: !useDoublePointsThisRound });
     }
   };
 
@@ -232,7 +228,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
                 <button
                   type="button"
                   onClick={handleUseFiftyFifty}
-                  disabled={powerUps.fiftyFifty <= 0 || eliminatedOptions.length > 0}
+                  disabled={paused || powerUps.fiftyFifty <= 0 || eliminatedOptions.length > 0}
                   className={`px-3 py-1 rounded-md font-black text-xs uppercase flex items-center gap-1 ${
                     powerUps.fiftyFifty > 0 && eliminatedOptions.length === 0
                       ? "bg-white text-gray-900 shadow"
@@ -247,7 +243,8 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
               <button
                 type="button"
                 onClick={handleToggleDouble}
-                disabled={powerUps.doublePoints <= 0}
+                disabled={paused || powerUps.doublePoints <= 0}
+                aria-pressed={useDoublePointsThisRound}
                 className={`px-3 py-1 rounded-md font-black text-xs uppercase flex items-center gap-1 ${
                   useDoublePointsThisRound
                     ? "bg-[#fdb913] text-gray-900 shadow scale-105 ring-2 ring-white"

@@ -1,5 +1,9 @@
 import { normalizeSettings, shuffle } from "./gameSettings.js";
 import xlsx from "xlsx";
+import { randomBytes } from 'node:crypto';
+import { gameSnapshot } from './gameSnapshot.js';
+
+export const RECONNECT_GRACE_MS = 60000;
 
 export class GameManager {
   constructor(io) {
@@ -21,6 +25,12 @@ export class GameManager {
     const room = {
       pin,
       hostSocketId,
+      hostResumeToken: randomBytes(32).toString('hex'),
+      hostDisconnectTimer: null,
+      hostDisconnected: false,
+      playerResumeTokens: new Map(),
+      playerDisconnectTimers: new Map(),
+      playerRoundState: new Map(),
       quiz: structuredClone(quiz),
       settings: normalizeSettings({ showQuestionsOnPlayerScreen: quiz?.showQuestionsOnPlayerScreen !== false }),
       introTimer: null,
@@ -89,6 +99,7 @@ export class GameManager {
     };
 
     room.players.set(playerId, player);
+    room.playerResumeTokens.set(playerId, randomBytes(32).toString('hex'));
     this.playerSocketMap.set(socketId, { pin, playerId });
 
     return { room, player };
@@ -99,6 +110,8 @@ export class GameManager {
     if (!room) return;
     clearInterval(room.questionTimer);
     clearTimeout(room.introTimer);
+    clearTimeout(room.hostDisconnectTimer);
+    for (const timer of room.playerDisconnectTimers.values()) clearTimeout(timer);
     this.io.to(pin).emit("room_closed", { message: "Chủ phòng đã đóng trò chơi." });
     for (const player of room.players.values()) this.playerSocketMap.delete(player.socketId);
     this.io.in?.(pin).socketsLeave?.(pin);
@@ -117,9 +130,83 @@ export class GameManager {
     const room = this.rooms.get(mapping.pin);
     this.playerSocketMap.delete(socketId);
     if (!room) return;
+    clearTimeout(room.playerDisconnectTimers.get(mapping.playerId));
+    room.playerDisconnectTimers.delete(mapping.playerId);
+    room.playerResumeTokens.delete(mapping.playerId);
     if (room.status === "LOBBY") room.players.delete(mapping.playerId);
     else if (room.players.has(mapping.playerId)) room.players.get(mapping.playerId).disconnected = true;
     this.io.to(room.hostSocketId).emit("player_left", { players: [...room.players.values()] });
+  }
+
+  disconnect(socketId) {
+    for (const room of this.rooms.values()) {
+      if (room.hostSocketId !== socketId) continue;
+      room.hostDisconnected = true;
+      if (room.status === 'QUESTION_ACTIVE') this.pauseGame(room.pin);
+      if (room.status === 'QUESTION_INTRO') clearTimeout(room.introTimer);
+      clearTimeout(room.hostDisconnectTimer);
+      if (room.status !== 'GAME_OVER') room.hostDisconnectTimer = setTimeout(() => this.closeRoom(room.pin), RECONNECT_GRACE_MS);
+      this.io.to(room.pin).emit('host_connection', { disconnected: true });
+    }
+    const mapping = this.playerSocketMap.get(socketId);
+    if (!mapping) return;
+    const room = this.rooms.get(mapping.pin);
+    if (!room) return;
+    room.players.get(mapping.playerId).disconnected = true;
+    clearTimeout(room.playerDisconnectTimers.get(mapping.playerId));
+    room.playerDisconnectTimers.set(mapping.playerId, setTimeout(() => this.removePlayer(socketId), RECONNECT_GRACE_MS));
+    this.io.to(room.hostSocketId).emit('player_left', { players: [...room.players.values()] });
+  }
+
+  resumeSession({ pin, role, resumeToken }, socketId, userId) {
+    const room = this.rooms.get(pin);
+    if (!room || typeof resumeToken !== 'string') return null;
+    if (role === 'host') {
+      if (!userId || room.ownerId !== userId || room.hostResumeToken !== resumeToken) return null;
+      const oldSocketId = room.hostSocketId;
+      clearTimeout(room.hostDisconnectTimer);
+      room.hostSocketId = socketId;
+      room.hostDisconnected = false;
+      if (room.status === 'QUESTION_INTRO') {
+        clearTimeout(room.introTimer);
+        room.introTimer = setTimeout(() => {
+          if (room.status === 'QUESTION_INTRO' && !room.hostDisconnected) this.activateQuestion(room);
+        }, 3000);
+      }
+      return { room, oldSocketId, data: {
+        pin, quizTitle: room.quiz.title, settings: room.settings, resumeToken,
+        showQuestionsOnPlayerScreen: room.showQuestionsOnPlayerScreen,
+        snapshot: gameSnapshot(room)
+      } };
+    }
+    if (role !== 'player') return null;
+    const entry = [...room.playerResumeTokens].find(([, token]) => token === resumeToken);
+    if (!entry) return null;
+    const [playerId] = entry;
+    const player = room.players.get(playerId);
+    const oldSocketId = player.socketId;
+    clearTimeout(room.playerDisconnectTimers.get(playerId));
+    room.playerDisconnectTimers.delete(playerId);
+    this.playerSocketMap.delete(oldSocketId);
+    player.socketId = socketId;
+    player.disconnected = false;
+    this.playerSocketMap.set(socketId, { pin, playerId });
+    return { room, oldSocketId, data: {
+      pin, player, quizTitle: room.quiz.title, settings: room.settings, resumeToken,
+      showQuestionsOnPlayerScreen: room.showQuestionsOnPlayerScreen,
+      snapshot: gameSnapshot(room, playerId)
+    } };
+  }
+
+  selectDoublePoints(socketId, enabled) {
+    const mapping = this.playerSocketMap.get(socketId);
+    if (!mapping) return;
+    const room = this.rooms.get(mapping.pin);
+    const player = room?.players.get(mapping.playerId);
+    if (!room || room.status !== 'QUESTION_ACTIVE' || !room.settings.powerUps ||
+      room.currentAnswers.has(mapping.playerId) || !player?.powerUps.doublePoints || typeof enabled !== 'boolean') return;
+    const state = room.playerRoundState.get(player.id) || {};
+    room.playerRoundState.set(player.id, { ...state, useDouble: enabled });
   }
 
   updateSettings(pin, settings) {
@@ -174,6 +261,7 @@ export class GameManager {
     room.status = "QUESTION_INTRO";
     const currentQ = room.quiz.questions[room.currentQuestionIndex];
     room.currentAnswers.clear();
+    room.playerRoundState.clear();
 
     this.io.to(room.pin).emit("question_intro", {
       questionNumber: room.currentQuestionIndex + 1,
@@ -260,6 +348,7 @@ export class GameManager {
     if (doubleActive) player.powerUps.doublePoints -= 1;
 
     let pointsEarned = 0;
+    const previousStreak = player.streak;
     if (isCorrect) {
       const speedFactor = room.settings.speedScoring ? Math.max(0.5, 1 - timeSpent / (currentQ.timeLimit * 2)) : 1;
       let basePoints = Math.round(currentQ.points * speedFactor);
@@ -283,6 +372,7 @@ export class GameManager {
 
     room.currentAnswers.set(playerId, {
       optionId,
+      previousStreak,
       timeSpent: Number(timeSpent.toFixed(2)),
       pointsEarned,
       isCorrect,
@@ -319,6 +409,7 @@ export class GameManager {
     const wrongOptions = currentQ.options.filter((opt) => !opt.isCorrect).map((opt) => opt.id);
     const shuffled = wrongOptions.sort(() => 0.5 - Math.random());
     const eliminated = shuffled.slice(0, 2);
+    room.playerRoundState.set(playerId, { ...room.playerRoundState.get(playerId), eliminatedOptions: eliminated });
 
     this.io.to(socketId).emit("fifty_fifty_result", { eliminatedOptions: eliminated });
   }
