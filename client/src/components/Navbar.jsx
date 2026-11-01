@@ -24,7 +24,7 @@ export default function Navbar({ currentView, setView, currentUser, onOpenLogin,
                 : "text-white hover:bg-white/15"
             }`}
           >
-            Vào phòng (PIN)
+            Tham gia ngay
           </button>
 
           {currentUser ? (
