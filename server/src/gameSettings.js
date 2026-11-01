@@ -4,7 +4,7 @@ export const defaultSettings = {
   showQuestionsOnPlayerScreen: true,
   speedScoring: true,
   streakBonus: false,
-  powerUps: false,
+  powerUps: true,
   timeLimit: 0
 };
 export function normalizeSettings(input = {}, previous = defaultSettings) {

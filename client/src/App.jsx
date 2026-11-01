@@ -1,6 +1,7 @@
 import DialogHost from "./components/DialogHost";
 import { notify } from "./services/dialogs";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { rememberNickname } from './services/nickname';
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
 import HostScreen from "./components/HostScreen";
@@ -20,6 +21,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState(null);
+  const pendingNickname = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -54,12 +56,18 @@ export default function App() {
     });
 
     socket.on("join_success", (data) => {
+      if (pendingNickname.current) {
+        const { nickname, rememberName } = pendingNickname.current;
+        rememberNickname(nickname, rememberName);
+        pendingNickname.current = null;
+      }
       setPlayerData(data);
       setCurrentView("player");
     });
 
     socket.on('host_error', ({ message }) => notify(message));
     socket.on("join_error", ({ message }) => {
+      pendingNickname.current = null;
       notify(message || "Không thể tham gia phòng!");
     });
 
@@ -71,7 +79,8 @@ export default function App() {
     };
   }, []);
 
-  const handleJoinGame = ({ pin, nickname, avatar }) => {
+  const handleJoinGame = ({ pin, nickname, avatar, rememberName }) => {
+    pendingNickname.current = { nickname, rememberName };
     socket.emit("join_room", { pin, nickname, avatar });
   };
 

@@ -53,6 +53,7 @@ test('intro can end early and host disconnect closes waiting rooms', t => {
 });
 test('disabled assists cannot award points and invalid transitions are ignored', t => {
   const {game,room,events}=fixture(t);game.nextQuestion(room.pin);assert.equal(room.status,'LOBBY');
+  game.updateSettings(room.pin, {powerUps:false});
   game.startQuiz(room.pin);t.mock.timers.tick(3000);
   game.useFiftyFifty('player');assert.equal(events.filter(e=>e.event==='fifty_fifty_result').length,0);
   game.submitAnswer('player',99);assert.equal(room.currentAnswers.size,0);
@@ -60,4 +61,24 @@ test('disabled assists cannot award points and invalid transitions are ignored',
   game.endCurrentQuestion(room);assert.equal(room.historyLogs.length,1);
   const playerPayload=events.find(e=>e.event==='question_start_player').data;
   assert.ok(playerPayload.options.every(o=>!('isCorrect' in o)));
+});
+
+test('assists are enabled by default, survive pause and can only be used once', t => {
+  const {game,room,events}=fixture(t);
+  assert.equal(room.settings.powerUps,true);
+  game.updateSettings(room.pin,{speedScoring:false});
+  game.startQuiz(room.pin);t.mock.timers.tick(3000);
+  assert.equal(events.find(e=>e.event==='question_start_player').data.powerUpsEnabled,true);
+  game.pauseGame(room.pin);game.useFiftyFifty('player');
+  assert.equal(room.players.get('p_player').powerUps.fiftyFifty,1);
+  game.resumeGame(room.pin);game.useFiftyFifty('player');game.useFiftyFifty('player');
+  const removed=events.filter(e=>e.event==='fifty_fifty_result');
+  assert.equal(removed.length,1);assert.equal(removed[0].data.eliminatedOptions.length,2);
+  assert.ok(!removed[0].data.eliminatedOptions.includes(2));
+  game.submitAnswer('player',2,true);
+  assert.equal(room.players.get('p_player').score,2000);
+  game.showLeaderboard(room.pin);game.nextQuestion(room.pin);t.mock.timers.tick(3000);
+  game.submitAnswer('player',2,true);
+  assert.equal(room.players.get('p_player').score,3000);
+  assert.deepEqual(room.players.get('p_player').powerUps,{fiftyFifty:0,doublePoints:0});
 });

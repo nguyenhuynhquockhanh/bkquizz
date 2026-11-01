@@ -181,17 +181,17 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const activeOptionConfigs = isTrueFalse ? trueFalseBlocks : kahootBlocks;
 
   return (
-    <div className="host-screen min-h-dvh bg-[#002855] flex flex-col justify-between select-none relative overflow-hidden">
+    <div className="host-screen min-h-dvh bg-[#002855] flex flex-col justify-between select-none relative">
       {qrOpen && <Modal title="Quét mã để tham gia" onClose={() => setQrOpen(false)}>
         <div className="text-center space-y-4"><QRCodeSVG value={joinUrl} size={360} marginSize={4} className="qr-code h-auto mx-auto" />
           <p className="text-sm text-gray-500">Mã PIN</p><p className="text-4xl sm:text-5xl font-black tracking-widest text-[#002855]">{roomData.pin}</p>
           <p className="text-sm break-all">{window.location.host}</p></div>
       </Modal>}
       {settingsOpen && <GameSettings settings={settings} onClose={() => setSettingsOpen(false)} onSave={draft => { socket.emit('update_room_settings', { pin: roomData.pin, settings: draft }); setSettingsOpen(false); }} />}
-      {roomState !== 'LOBBY' && roomState !== 'GAME_OVER' && <div className="game-controls flex flex-wrap justify-end items-center gap-2 p-3 bg-[#001736] text-white">
-        {paused && <span className="mr-auto font-bold" role="status">Đang tạm dừng</span>}
-        {roomState === 'QUESTION_ACTIVE' && <button onClick={() => socket.emit(paused ? 'resume_game' : 'pause_game', { pin: roomData.pin })} className="px-4 py-2 rounded-lg bg-white text-[#002855] font-bold">{paused ? 'Tiếp tục' : 'Tạm dừng'}</button>}
-        <button onClick={endEarly} className="px-4 py-2 rounded-lg bg-red-700 text-white font-bold">Kết thúc sớm</button>
+      {roomState !== 'GAME_OVER' && <div role="toolbar" aria-label="Điều khiển trò chơi" className="game-controls shrink-0 flex flex-wrap justify-end items-center gap-2 p-3 bg-[#001736] text-white shadow-lg">
+        <span className="mr-auto font-bold text-sm" role="status">{paused ? 'Đang tạm dừng' : roomState === 'LOBBY' ? 'Phòng chờ' : `Câu ${questionNumber}/${totalQuestions}`}</span>
+        <button disabled={roomState !== 'QUESTION_ACTIVE'} title={roomState !== 'QUESTION_ACTIVE' ? 'Có thể tạm dừng khi người chơi đang trả lời' : undefined} onClick={() => socket.emit(paused ? 'resume_game' : 'pause_game', { pin: roomData.pin })} className="px-4 py-2 rounded-lg bg-white text-[#002855] font-bold disabled:opacity-50 disabled:cursor-not-allowed">{paused ? 'Tiếp tục' : 'Tạm dừng'}</button>
+        <button onClick={roomState === 'LOBBY' ? leaveLobby : endEarly} className="px-4 py-2 rounded-lg bg-red-700 text-white font-bold">{roomState === 'LOBBY' ? 'Đóng phòng' : 'Kết thúc sớm'}</button>
       </div>}
       {/* Floating Reactions Overlay */}
       <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
@@ -241,6 +241,10 @@ export default function HostScreen({ roomData, socket, onLeave }) {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 px-3 py-3 rounded-lg bg-blue-50 text-[#002855] text-sm font-bold cursor-pointer">
+                <input type="checkbox" checked={!!settings.powerUps} onChange={e => socket.emit('update_room_settings', { pin: roomData.pin, settings: { powerUps: e.target.checked } })} className="w-5 h-5 accent-[#0275b8]" />
+                Trợ giúp 50:50 / x2
+              </label>
               <button onClick={() => setSettingsOpen(true)} className="px-4 py-3 rounded-lg bg-blue-50 text-[#002855] font-bold">Cài đặt</button>
               <button
                 onClick={toggleMusic}

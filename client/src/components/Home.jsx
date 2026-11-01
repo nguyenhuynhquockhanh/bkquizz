@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { FileSpreadsheet, BookOpen, LogIn, Monitor, ShieldCheck, User } from "lucide-react";
 import BKLogo from "./BKLogo";
+import { readNickname, rememberNickname } from '../services/nickname';
 
 const AVATARS = ["🐱", "🐶", "🦊", "🦁", "🐼", "🚀", "🦄", "⚡", "🎓", "⚙️"];
 
 export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, currentUser }) {
   const [pin, setPin] = useState("");
-  const [nickname, setNickname] = useState(currentUser?.name || "");
+  const [nickname, setNickname] = useState(() => readNickname() || currentUser?.name || "");
+  const [rememberName, setRememberName] = useState(true);
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
   const [step, setStep] = useState("PIN");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     if (currentUser?.name) {
-      setNickname(currentUser.name);
+      setNickname(previous => previous || readNickname() || currentUser.name);
     }
   }, [currentUser]);
 
@@ -43,7 +45,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
       return;
     }
     setErrorMsg("");
-    onJoinGame({ pin: pin.trim(), nickname: nickname.trim(), avatar: selectedAvatar });
+    onJoinGame({ pin: pin.trim(), nickname: nickname.trim(), avatar: selectedAvatar, rememberName });
   };
 
   return (
@@ -126,11 +128,12 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">
+                <label htmlFor="player-nickname" className="block text-xs font-bold text-gray-600 mb-1">
                   Biệt danh của bạn
                 </label>
                 <input
                   type="text"
+                  id="player-nickname"
                   placeholder="Nhập biệt danh"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
@@ -139,6 +142,14 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
                   className="w-full h-11 bg-white border border-gray-300 rounded-lg font-bold text-center text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#0275b8] focus:ring-2 focus:ring-blue-100 transition-all"
                 />
               </div>
+
+              <label className="flex items-center gap-2 text-sm text-[#002855] cursor-pointer">
+                <input type="checkbox" checked={rememberName} onChange={e => {
+                  setRememberName(e.target.checked);
+                  if (!e.target.checked) rememberNickname('', false);
+                }} className="w-4 h-4 accent-[#0275b8]" />
+                Nhớ biệt danh trong 30 ngày
+              </label>
 
               {/* Chọn Avatar */}
               <div>

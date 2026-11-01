@@ -216,6 +216,7 @@ export class GameManager {
         questionType: currentQ.type || "MULTIPLE_CHOICE",
         optionsCount: currentQ.options.length,
         powerUps: player.powerUps,
+        powerUpsEnabled: room.settings.powerUps,
         showQuestionsOnPlayer,
         questionTitle: showQuestionsOnPlayer ? currentQ.question : null,
         imageUrl: showQuestionsOnPlayer ? (currentQ.imageUrl || "") : null,

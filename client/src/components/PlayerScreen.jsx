@@ -47,6 +47,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
         questionType,
         timeLimit,
         powerUps: pUps,
+        powerUpsEnabled: assistsEnabled,
         showQuestionsOnPlayer: sQ,
         questionTitle: qTitle,
         imageUrl: imgUrl,
@@ -57,6 +58,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
         setCurrentQuestionType(questionType || "MULTIPLE_CHOICE");
         setRemainingTime(timeLimit);
         if (pUps) setPowerUps(pUps);
+        if (assistsEnabled !== undefined) setPowerUpsEnabled(assistsEnabled);
         if (sQ !== undefined) setShowQuestionsOnPlayer(sQ);
         if (qTitle) setQuestionTitle(qTitle);
         setQuestionImageUrl(imgUrl || "");
@@ -220,7 +222,7 @@ export default function PlayerScreen({ playerData, socket, onLeave }) {
       {playerState === "PLAYING" && (
         <div className="flex-1 flex flex-col justify-between p-3 gap-2 sm:gap-3 overflow-y-auto">
           {/* Thanh trạng thái thời gian & trợ giúp */}
-          <div className="flex items-center justify-between px-1 shrink-0">
+          <div className="flex flex-wrap gap-2 items-center justify-between px-1 shrink-0">
             <span className="text-xs font-black text-white/90">
               Thời gian: <span className="text-[#fdb913] font-black text-sm">{remainingTime}s</span>
             </span>

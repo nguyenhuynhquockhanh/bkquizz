@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { GameManager } from "./gameManager.js";
 
 import { createAuth, publicUser, verifyPassword } from './auth.js';
+import { httpPolicy, staticCacheHeaders } from './httpPolicy.js';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
 
+app.use(httpPolicy({ production: process.env.NODE_ENV === 'production' || !!process.env.WEBSITE_HOSTNAME }));
 app.use(cors());
 app.use(express.json());
 
@@ -241,9 +243,10 @@ app.get("/api/reports/:pin/export", requireUser, (req, res) => {
 app.use('/api', (req, res) => res.status(404).json({ error: 'API not found' }));
 const clientDist = path.resolve(__dirname, '../../client/dist');
 if (fs.existsSync(path.join(clientDist, 'index.html'))) {
-  app.use(express.static(clientDist));
+  app.use(express.static(clientDist, { setHeaders: staticCacheHeaders }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/socket.io') || path.extname(req.path)) return next();
+    res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 } else if (process.env.NODE_ENV === 'production') {

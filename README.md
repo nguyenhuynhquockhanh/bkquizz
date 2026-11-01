@@ -14,7 +14,7 @@ Giao diện dùng logo Bách Khoa, ảnh nền khuôn viên, bảng màu xanh/v�
 
 Nguồn dự án gốc: **[mawoka-myblock/ClassQuiz](https://github.com/mawoka-myblock/ClassQuiz)**. BKQuiz giữ mô hình sử dụng của nền tảng quiz tương tác: tạo đề → mở phòng → tham gia → trả lời theo thời gian → xếp hạng → xem kết quả. Phần frontend và backend hiện được triển khai bằng React/Node.js, khác với SvelteKit/Python của ClassQuiz.
 
-**Mốc đối chiếu trong README:** mã nguồn ClassQuiz tại commit [`49dca85`](https://github.com/mawoka-myblock/ClassQuiz/tree/49dca859dee1a1821b056abf95c2df501eda98e1), với BKQuiz tại commit [`8a9d33d`](https://github.com/nguyenhuynhquockhanh/bkquizz/tree/8a9d33d65cc89ae5c58302238590cf899d584227), kiểm tra ngày 01/11/2026. Đây là mốc ClassQuiz dùng để đối chiếu, không phải khẳng định đó là commit được dùng lúc bắt đầu kế thừa.
+**Mốc đối chiếu trong README:** mã nguồn ClassQuiz tại commit [`49dca85`](https://github.com/mawoka-myblock/ClassQuiz/tree/49dca859dee1a1821b056abf95c2df501eda98e1), với BKQuiz trong repository này, cập nhật ngày 01/11/2026. Đây là mốc ClassQuiz dùng để đối chiếu, không phải khẳng định đó là commit được dùng lúc bắt đầu kế thừa.
 
 Phân biệt ba nhóm thay đổi:
 
@@ -79,8 +79,10 @@ Không thể tự xóa hay tự hạ quyền tài khoản đang đăng nhập. T
 ## 🎮 Tạo phòng & điều khiển trò chơi
 
 - Trong thư viện, chọn **Chơi ngay → Cài đặt** ở phòng chờ: đảo câu/đáp án, hiện câu hỏi trên máy người chơi, điểm tốc độ, thưởng chuỗi đúng, trợ giúp 50:50/x2 và thời gian chung (hoặc giữ thời gian từng câu).
+- **Trợ giúp mặc định bật cho phòng mới.** Chủ phòng có thể bật/tắt ngay bằng ô **Trợ giúp 50:50 / x2** tại phòng chờ, hoặc trong **Cài đặt**. Mỗi người chơi được dùng mỗi loại một lần trong cả lượt chơi; 50:50 chỉ hiện ở câu trắc nghiệm, không áp dụng cho Đúng/Sai. Muốn đổi cài đặt sau khi đã bắt đầu, cần mở phòng mới.
 - Cài đặt chỉ áp dụng cho lượt chơi, không sửa bộ câu hỏi đã lưu. Khi bắt đầu, các cài đặt được khóa. Đáp án sau khi đảo vẫn khớp màu/nút của mọi người chơi.
 - Khi đang trả lời, chủ phòng có thể **Tạm dừng / Tiếp tục**. Máy chủ dừng đồng hồ, khóa nhận đáp án và loại thời gian tạm dừng khỏi điểm tốc độ.
+- Thanh điều khiển bám phía trên màn hình khi cuộn. Nút **Tạm dừng** chỉ khả dụng trong lúc câu hỏi đang nhận đáp án; ở phòng chờ, phần giới thiệu câu và màn hình kết quả câu, nút này bị vô hiệu hóa. **Kết thúc sớm** dùng được từ khi bắt đầu lượt chơi tới trước kết quả cuối; ở phòng chờ là nút **Đóng phòng**.
 - **Kết thúc sớm** có hộp xác nhận, giữ điểm đã ghi nhận, chuyển tất cả người chơi tới kết quả và cho tải Excel. Nếu kết thúc khi mới giới thiệu câu hỏi, câu chưa mở sẽ không được ghi là đã chơi.
 - Bấm QR ở phòng chờ để phóng to giữa màn hình. Đóng bằng nút ✕ hoặc Escape.
 - Các thông báo/xác nhận dùng hộp thoại chung, có quản lý focus và khóa cuộn nền. Giao diện hẹp dùng thẻ cho bảng quản lý, nội dung câu hỏi/đáp án dài được xuống dòng và cuộn được.
@@ -117,7 +119,7 @@ npm test --prefix server
 npm run build --prefix client
 ```
 
-Các bài test trong [server/test](server/test) kiểm tra đăng nhập, quyền user/admin, sở hữu đề, thu hồi phiên; cài đặt lượt chơi, đảo đáp án, tạm dừng/tiếp tục, kết thúc sớm và ngắt kết nối host. Test dùng dữ liệu tạm hoặc trạng thái phòng giả lập, không sửa dữ liệu sử dụng thực tế.
+Các bài test trong [server/test](server/test) kiểm tra đăng nhập, quyền user/admin, sở hữu đề, thu hồi phiên; cài đặt lượt chơi, đảo đáp án, tạm dừng/tiếp tục, kết thúc sớm, trợ giúp dùng một lần và ngắt kết nối host. Có thêm kiểm tra cache (bao gồm `304`), HSTS và cookie biệt danh. Test dùng dữ liệu tạm hoặc trạng thái phòng giả lập, không sửa dữ liệu sử dụng thực tế.
 
 Để thử luồng chơi, mở hai tab: đăng nhập và mở phòng ở tab host; nhập PIN và biệt danh ở tab người chơi. Kiểm tra trả lời, tạm dừng/tiếp tục, kết thúc sớm và tải Excel. Giao diện đã được kiểm tra ở các chiều rộng 320, 390, 768 và 1440 px; đây không phải xác nhận cho mọi thiết bị/trình duyệt.
 
@@ -130,6 +132,32 @@ Workflow [.github/workflows/main_bkquizz.yml](.github/workflows/main_bkquizz.yml
 Mô hình triển khai: **Trình duyệt → HTTPS 443 tại Azure → Express/API/Socket.IO qua cổng HTTP nội bộ**. Frontend, API và Socket.IO dùng chung origin. Website có xử lý động ở server: xác thực, lưu bộ đề, tạo phòng, nhận đáp án, tính điểm và xuất báo cáo; không chỉ phục vụ trang HTML tĩnh.
 
 Bật HTTPS Only trên Azure và kiểm tra URL triển khai thực tế: chứng chỉ hợp lệ, HTTP chuyển sang HTTPS, API và Socket.IO hoạt động trên cùng HTTPS origin. Build thành công hoặc chữ HTTPS trên giao diện không thay thế việc kiểm tra TLS thực tế.
+
+### Cache, cookie biệt danh và HSTS
+
+Chính sách HTTP nằm trong [httpPolicy.js](server/src/httpPolicy.js), được gắn vào Express trong [index.js](server/src/index.js):
+
+| Nội dung | Header / cách xử lý |
+| :--- | :--- |
+| JS/CSS và tài nguyên có hash trong thư mục build `assets/` | `Cache-Control: public, max-age=31536000, immutable` — cache một năm; bản build mới đổi tên file. |
+| HTML, gồm đường dẫn SPA như `/admin` | `Cache-Control: no-cache` — trình duyệt kiểm tra bản mới với server trước khi dùng lại. |
+| Ảnh/logo và file tĩnh có URL ổn định | `Cache-Control: public, max-age=3600` — cache một giờ. |
+| Mọi đường dẫn `/api`, kể cả đăng nhập, quản trị, báo cáo và lỗi API | `Cache-Control: no-store` — không lưu phản hồi API vào HTTP cache. |
+| Triển khai production hoặc môi trường Azure có `WEBSITE_HOSTNAME` | `Strict-Transport-Security: max-age=31536000` — trình duyệt ghi nhớ dùng HTTPS trong một năm. |
+
+`ETag` và `Last-Modified` vẫn được giữ cho tài nguyên tĩnh, hỗ trợ yêu cầu có điều kiện và phản hồi `304 Not Modified`. HSTS không bật cho môi trường phát triển thông thường; Azure vẫn cần **HTTPS Only** để chuyển hướng lượt truy cập HTTP đầu tiên. Không bật `includeSubDomains` hay preload trong cấu hình này.
+
+Ở bước nhập biệt danh, ô **Nhớ biệt danh trong 30 ngày** giúp điền sẵn tên cho lần tham gia sau. Cookie `bkquiz_nickname` chỉ được ghi sau khi vào phòng thành công, có `Max-Age=2592000`, `Path=/`, `SameSite=Lax` và `Secure` khi truy cập HTTPS. Bỏ chọn ô này sẽ xóa cookie đã lưu. Cookie không chứa mật khẩu/token và không cấp quyền đăng nhập; JavaScript đọc nó để điền form nên không đặt `HttpOnly`. Đăng nhập vẫn dùng Bearer token như phần phân quyền ở trên. Mã xử lý: [nickname.js](client/src/services/nickname.js).
+
+Để minh họa nội dung HTTP trong báo cáo, dùng DevTools → Network xem `Cache-Control`, `ETag`, mã `301/304`; dùng Application → Cookies xem cookie biệt danh và cờ `Secure`. Khi kiểm tra cache trình duyệt, bỏ chọn **Disable cache**. Có thể kiểm tra riêng HTML và API bằng:
+
+```sh
+curl -I https://YOUR-HOST/
+curl -I http://YOUR-HOST/
+curl -i https://YOUR-HOST/api/auth/me
+```
+
+Yêu cầu cuối khi chưa đăng nhập phải trả `401` cùng `Cache-Control: no-store`. Cookie biệt danh được tạo ở trình duyệt sau khi tham gia thành công, không xuất hiện như `Set-Cookie` từ API đăng nhập.
 
 ### Dữ liệu sau triển khai
 
