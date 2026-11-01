@@ -194,6 +194,20 @@ app.get("/api/reports/:pin/export", (req, res) => {
   res.send(buffer);
 });
 
+// Serve the built React app from the same HTTP server as API and Socket.IO.
+// Unknown API routes must remain JSON 404s, never the SPA HTML.
+app.use('/api', (req, res) => res.status(404).json({ error: 'API not found' }));
+const clientDist = path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(path.join(clientDist, 'index.html'))) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/socket.io') || path.extname(req.path)) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+} else if (process.env.NODE_ENV === 'production') {
+  throw new Error('Missing client/dist. Run npm run build before npm start.');
+}
+
 // === SOCKET.IO EVENTS ===
 io.on("connection", (socket) => {
   socket.on("create_room", ({ quizId }) => {
@@ -271,3 +285,4 @@ io.on("connection", (socket) => {
 httpServer.listen(PORT, () => {
   console.log(`Kahoot Clone Realtime Server running on http://localhost:${PORT}`);
 });
+

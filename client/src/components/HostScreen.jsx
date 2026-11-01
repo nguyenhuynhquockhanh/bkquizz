@@ -20,7 +20,7 @@ export default function HostScreen({ roomData, socket, onLeave }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
   const joinUrl = `${window.location.origin}/?pin=${roomData?.pin}`;
 
   useEffect(() => {
@@ -565,3 +565,4 @@ export default function HostScreen({ roomData, socket, onLeave }) {
     </div>
   );
 }
+

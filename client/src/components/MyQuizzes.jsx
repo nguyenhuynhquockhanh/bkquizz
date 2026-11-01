@@ -7,7 +7,7 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
   const [activeTab, setActiveTab] = useState("quizzes");
   const [loading, setLoading] = useState(true);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
   const fetchMyQuizzes = async () => {
     try {
@@ -264,3 +264,4 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }
     </div>
   );
 }
+
