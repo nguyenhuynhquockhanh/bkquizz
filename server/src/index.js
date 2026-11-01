@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { GameManager } from "./gameManager.js";
 
 import { createAuth, publicUser, verifyPassword } from './auth.js';
+import { validateImportedQuiz } from './quizImport.js';
 
 dotenv.config();
 
@@ -23,7 +24,6 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
 
 app.use(cors());
-app.use(express.json());
 
 function readQuizzes() {
   try {
@@ -70,6 +70,41 @@ const gameManager = new GameManager(io);
 const auth = createAuth(readUsers, saveUsers);
 const { requireUser, requireAdmin } = auth;
 const canManage = (user, quiz) => user.role === 'admin' || quiz.userId === user.id;
+
+// Authenticate before accepting the larger body used by PDF question images.
+// Keep the normal API limit unchanged for every other endpoint.
+const parseImport = express.json({ limit: '12mb' });
+app.post('/api/quizzes/import', requireUser, (req, res, next) => {
+  parseImport(req, res, (error) => {
+    if (error) {
+      return res.status(error.type === 'entity.too.large' ? 413 : 400).json({
+        error: error.type === 'entity.too.large'
+          ? 'Bộ đề vượt quá 12 MB. Hãy giảm số câu hoặc kích thước ảnh.'
+          : 'Không đọc được dữ liệu bộ đề. Hãy thử nhập lại file PDF.'
+      });
+    }
+    next();
+  });
+}, (req, res) => {
+  let importedQuiz;
+  try {
+    importedQuiz = validateImportedQuiz(req.body, req.user.id);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+  try {
+    const updated = [importedQuiz, ...readQuizzes()];
+    saveQuizzes(updated);
+    quizzes = updated;
+    return res.status(201).json(importedQuiz);
+  } catch (error) {
+    console.error('Lỗi lưu bộ đề PDF:', error);
+    return res.status(500).json({ error: 'Chưa lưu được bộ đề. Vui lòng thử lại.' });
+  }
+});
+// Imported illustrations must also survive subsequent edits in the normal editor.
+app.put('/api/quizzes/:id', requireUser, parseImport);
+app.use(express.json());
 
 // === AUTHENTICATION APIS ===
 app.post('/api/auth/login', (req, res) => {

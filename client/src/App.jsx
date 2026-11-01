@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import PdfQuizImport from "./components/PdfQuizImport";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
 import HostScreen from "./components/HostScreen";
@@ -150,6 +151,7 @@ export default function App() {
             onHostQuiz={handleHostGame}
             onEditQuiz={handleOpenEditQuiz}
             onCreateQuiz={handleOpenCreateQuiz}
+            onImportPdf={() => setCurrentView("pdf-import")}
           />
         )}
 
@@ -185,6 +187,10 @@ export default function App() {
             onSaved={() => setCurrentView(currentUser ? "my-quizzes" : "home")}
           />
         )}
+        {currentView === "pdf-import" && currentUser && <PdfQuizImport
+          onBack={() => setCurrentView("my-quizzes")}
+          onSaved={(quiz, openRoom) => { setCurrentView("my-quizzes"); if (openRoom) handleHostGame(quiz.id); }}
+        />}
       </main>
 
       {/* Modal Đăng nhập / Đăng ký */}

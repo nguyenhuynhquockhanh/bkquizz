@@ -26,9 +26,22 @@ Không thể tự xóa hay tự hạ quyền tài khoản đang đăng nhập. T
 - Dữ liệu JSON mặc định nằm cùng mã nguồn và có thể bị thay thế khi deploy. Muốn giữ dữ liệu, đặt `DATA_DIR` trỏ tới thư mục lưu trữ bền vững, có sẵn `users.json` và `quizzes.json`. Không ghi đè dữ liệu đang dùng bằng file seed mỗi lần deploy.
 - Phòng thi và lịch sử trận đang lưu trong bộ nhớ; chưa hỗ trợ nhiều server instance dùng chung phiên/phòng.
 
+## Nhập bộ đề từ PDF
+
+1. Đăng nhập, mở **Bộ đề của tôi → Nhập từ PDF**.
+2. Chọn PDF có chữ (tối đa 20 MB, 60 trang, 100 câu).
+3. Xem lại câu hỏi, hình minh họa và lựa chọn; chọn đáp án đúng cho câu chưa nhận được đáp án. Có thể sửa nội dung, thêm/xóa lựa chọn hoặc bỏ câu.
+4. Xác nhận đã đối chiếu PDF, chọn **Lưu bộ đề** hoặc **Tạo đề và mở phòng** để lấy PIN.
+
+Tính năng dùng chung cho nhiều file, không phụ thuộc một bộ đề cố định. Nhận diện tiêu đề `Câu 1`, `Câu hỏi 1`, `Question 1` hoặc `1.`; lựa chọn `A.`/`A)` đến `D.`/`D)` trên các dòng riêng. Đáp án ghi ngay sau câu bằng `Đáp án: B` hoặc `The correct answer is: ...` được ghép với lựa chọn. Không suy đoán đáp án khi thiếu hay không khớp.
+
+PDF được đọc bằng PDF.js trong trình duyệt; chỉ bộ đề đã duyệt và hình nhúng được lưu lên server. Hình raster nằm trong phần đề trước các lựa chọn được giữ khi nhận diện được vị trí. PDF scan cần OCR trước; bố cục nhiều cột, hình vector, công thức phức tạp và bảng đáp án cuối file chưa được tự động xử lý đầy đủ. Luôn đối chiếu bản gốc. Bản đầu hỗ trợ câu trắc nghiệm 4 lựa chọn với một đáp án đúng; câu khác phải sửa hoặc bỏ trước khi lưu.
+
+API nhập yêu cầu đăng nhập, tự gán chủ sở hữu và kiểm tra nội dung/đáp án. Giới hạn dữ liệu lưu 12 MB, mỗi ảnh nhúng 750 KB. Nếu lưu thành công nhưng mất kết nối lúc mở phòng, vào **Bộ đề của tôi → Mở phòng** để dùng lại bộ đề đã lưu.
+
 ## Chạy local
 
-Cần Node.js 22.12+ hoặc 24.
+Cần Node.js 22.13+ hoặc 24.
 
 ```sh
 npm install
