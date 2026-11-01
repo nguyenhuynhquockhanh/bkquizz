@@ -1,53 +1,69 @@
 import React from "react";
 
-export default function BKLogo({ className = "w-9 h-9", showText = false, textClassName = "text-white" }) {
+export default function BKLogo({ className = "w-12 h-12", showText = false, textClassName = "text-gray-800" }) {
   return (
-    <div className="flex items-center gap-2 select-none">
-      {/* Biểu tượng Bánh răng & Chữ BK chuẩn Bách Khoa TP.HCM */}
+    <div className="flex items-center gap-3 select-none">
+      {/* Logo 3D Khối Lập Phương đặc trưng của ĐH Bách Khoa TP.HCM (HCMUT / MyBK) */}
       <svg
         className={className}
-        viewBox="0 0 100 100"
+        viewBox="0 0 120 120"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <circle cx="50" cy="50" r="48" fill="#003875" stroke="#FDB913" strokeWidth="3" />
-        {/* Răng cưa bánh răng kỹ thuật BK */}
-        <g fill="#FDB913">
-          <rect x="46" y="2" width="8" height="8" rx="1.5" />
-          <rect x="46" y="90" width="8" height="8" rx="1.5" />
-          <rect x="2" y="46" width="8" height="8" rx="1.5" />
-          <rect x="90" y="46" width="8" height="8" rx="1.5" />
-          <rect x="14" y="14" width="8" height="8" rx="1.5" transform="rotate(45 18 18)" />
-          <rect x="78" y="14" width="8" height="8" rx="1.5" transform="rotate(45 82 18)" />
-          <rect x="14" y="78" width="8" height="8" rx="1.5" transform="rotate(45 18 82)" />
-          <rect x="78" y="78" width="8" height="8" rx="1.5" transform="rotate(45 82 82)" />
-        </g>
-        {/* Vòng tròn lõi */}
-        <circle cx="50" cy="50" r="38" fill="#002855" stroke="#FFFFFF" strokeWidth="2" />
-        {/* Tháp / Khối Kỹ Thuật BK */}
-        <path
-          d="M32 68 L32 32 L46 32 C52 32 56 36 56 41 C56 44 54 47 50 48 C55 49 58 53 58 58 C58 64 53 68 46 68 Z M39 45 L45 45 C48 45 50 43 50 41 C50 38 48 37 45 37 L39 37 Z M39 63 L46 63 C49 63 51 61 51 58 C51 55 49 53 46 53 L39 53 Z"
-          fill="#FFFFFF"
-        />
-        <path
-          d="M60 68 L60 32 L67 32 L67 47 L78 32 L87 32 L73 49 L88 68 L79 68 L67 52 L67 68 Z"
-          fill="#FDB913"
-        />
-        {/* Nét chân đế */}
-        <rect x="26" y="72" width="48" height="3" rx="1.5" fill="#FDB913" />
+        {/* Khối Đỉnh (Top facet) */}
+        <path d="M60 4 L88 20 L60 36 L32 20 Z" fill="#004b87" />
+        {/* Khối Trên Trái */}
+        <path d="M30 22 L58 38 L58 70 L30 54 Z" fill="#0072bc" />
+        {/* Khối Trên Phải */}
+        <path d="M90 22 L90 54 L62 70 L62 38 Z" fill="#005da6" />
+        {/* Khối Dưới Trái */}
+        <path d="M30 58 L58 74 L58 106 L30 90 Z" fill="#0096db" />
+        {/* Khối Dưới Phải */}
+        <path d="M62 74 L90 58 L90 90 L62 106 Z" fill="#0079c2" />
+        {/* Khối Đáy (Bottom facet) */}
+        <path d="M60 76 L88 92 L60 108 L32 92 Z" fill="#00386b" />
+
+        {/* Khối Trắng Trung Tâm */}
+        <polygon points="60,28 92,46 92,74 60,92 28,74 28,46" fill="#FFFFFF" />
+
+        {/* Chữ BK TP.HCM ở giữa */}
+        <text
+          x="60"
+          y="58"
+          textAnchor="middle"
+          fill="#00386b"
+          fontSize="21"
+          fontWeight="900"
+          fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          letterSpacing="0.5"
+        >
+          BK
+        </text>
+        <text
+          x="60"
+          y="73"
+          textAnchor="middle"
+          fill="#005da6"
+          fontSize="9.5"
+          fontWeight="800"
+          fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          letterSpacing="0.5"
+        >
+          TP.HCM
+        </text>
       </svg>
 
       {showText && (
         <div className="flex flex-col text-left leading-tight">
-          <div className="flex items-center gap-1">
-            <span className="text-2xl font-black tracking-tight text-white drop-shadow">
-              BK<span className="text-[#FDB913]">Quiz</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xl font-black tracking-tight text-white">
+              BK<span className="text-[#f5c542]">Quiz</span>
             </span>
-            <span className="text-xs px-1.5 py-0.5 rounded bg-[#034ea2] text-blue-100 font-extrabold uppercase border border-blue-400/30">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/20 text-white font-bold uppercase tracking-wider">
               HCMUT
             </span>
           </div>
-          <span className={`text-[10px] font-bold tracking-wider uppercase opacity-90 ${textClassName}`}>
+          <span className={`text-[11px] font-semibold tracking-wide opacity-90 ${textClassName}`}>
             Đại học Bách Khoa • ĐHQG-HCM
           </span>
         </div>

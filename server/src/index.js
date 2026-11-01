@@ -150,7 +150,7 @@ app.post("/api/quizzes", (req, res) => {
     description: req.body.description || "",
     coverImage:
       req.body.coverImage ||
-      "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80",
     showQuestionsOnPlayerScreen: req.body.showQuestionsOnPlayerScreen !== false,
     questions: req.body.questions || []
   };
@@ -185,7 +185,68 @@ app.delete("/api/quizzes/:id", (req, res) => {
   res.json({ message: "Đã xóa bộ đề thành công!" });
 });
 
-// Match history API for dashboard
+// === ADMIN MANAGEMENT APIS ===
+
+app.get("/api/admin/overview", (req, res) => {
+  quizzes = readQuizzes();
+  const users = readUsers();
+  const liveRooms = gameManager.getActiveRooms();
+  const totalQuestions = quizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0);
+  res.json({
+    totalQuizzes: quizzes.length,
+    totalQuestions,
+    totalUsers: users.length,
+    liveRoomsCount: liveRooms.length,
+    historyCount: matchHistory.length,
+    uptime: Math.round(process.uptime()),
+    protocol: "HTTPS (Port 443 / SSL Encrypted)",
+    environment: process.env.NODE_ENV || "production"
+  });
+});
+
+app.get("/api/admin/users", (req, res) => {
+  const users = readUsers().map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    createdAt: u.createdAt || "2026-10-29T00:00:00.000Z",
+    role: u.email === "admin@hcmut.edu.vn" || u.email === "demo@kahoot.com" ? "Quản trị viên (Admin)" : "Giảng viên"
+  }));
+  res.json(users);
+});
+
+app.post("/api/admin/users", (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "Vui lòng nhập đủ họ tên, email và mật khẩu!" });
+  }
+  const users = readUsers();
+  if (users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())) {
+    return res.status(400).json({ error: "Email này đã tồn tại trong hệ thống!" });
+  }
+  const newUser = {
+    id: `user_${Date.now()}`,
+    name: name.trim(),
+    email: email.trim().toLowerCase(),
+    password: password.trim(),
+    createdAt: new Date().toISOString()
+  };
+  users.push(newUser);
+  saveUsers(users);
+  res.status(201).json({ id: newUser.id, name: newUser.name, email: newUser.email });
+});
+
+app.delete("/api/admin/users/:id", (req, res) => {
+  let users = readUsers();
+  users = users.filter((u) => u.id !== req.params.id);
+  saveUsers(users);
+  res.json({ message: "Đã xóa tài khoản người dùng thành công!" });
+});
+
+app.get("/api/admin/live-rooms", (req, res) => {
+  res.json(gameManager.getActiveRooms());
+});
+
 app.get("/api/admin/history", (req, res) => {
   res.json(matchHistory);
 });

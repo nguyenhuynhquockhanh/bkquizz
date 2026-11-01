@@ -1,17 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <circle cx="50" cy="50" r="48" fill="#003875" stroke="#FDB913" stroke-width="4"/>
-  <g fill="#FDB913">
-    <rect x="46" y="2" width="8" height="8" rx="1.5"/>
-    <rect x="46" y="90" width="8" height="8" rx="1.5"/>
-    <rect x="2" y="46" width="8" height="8" rx="1.5"/>
-    <rect x="90" y="46" width="8" height="8" rx="1.5"/>
-    <rect x="14" y="14" width="8" height="8" rx="1.5" transform="rotate(45 18 18)"/>
-    <rect x="78" y="14" width="8" height="8" rx="1.5" transform="rotate(45 82 18)"/>
-    <rect x="14" y="78" width="8" height="8" rx="1.5" transform="rotate(45 18 82)"/>
-    <rect x="78" y="78" width="8" height="8" rx="1.5" transform="rotate(45 82 82)"/>
-  </g>
-  <circle cx="50" cy="50" r="38" fill="#002855" stroke="#FFFFFF" stroke-width="2"/>
-  <path d="M32 68 L32 32 L46 32 C52 32 56 36 56 41 C56 44 54 47 50 48 C55 49 58 53 58 58 C58 64 53 68 46 68 Z M39 45 L45 45 C48 45 50 43 50 41 C50 38 48 37 45 37 L39 37 Z M39 63 L46 63 C49 63 51 61 51 58 C51 55 49 53 46 53 L39 53 Z" fill="#FFFFFF"/>
-  <path d="M60 68 L60 32 L67 32 L67 47 L78 32 L87 32 L73 49 L88 68 L79 68 L67 52 L67 68 Z" fill="#FDB913"/>
-  <rect x="26" y="72" width="48" height="3" rx="1.5" fill="#FDB913"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <path d="M60 4 L88 20 L60 36 L32 20 Z" fill="#004b87" />
+  <path d="M30 22 L58 38 L58 70 L30 54 Z" fill="#0072bc" />
+  <path d="M90 22 L90 54 L62 70 L62 38 Z" fill="#005da6" />
+  <path d="M30 58 L58 74 L58 106 L30 90 Z" fill="#0096db" />
+  <path d="M62 74 L90 58 L90 90 L62 106 Z" fill="#0079c2" />
+  <path d="M60 76 L88 92 L60 108 L32 92 Z" fill="#00386b" />
+  <polygon points="60,28 92,46 92,74 60,92 28,74 28,46" fill="#FFFFFF" />
+  <text x="60" y="58" text-anchor="middle" fill="#00386b" font-size="21" font-weight="900" font-family="sans-serif">BK</text>
+  <text x="60" y="73" text-anchor="middle" fill="#005da6" font-size="9.5" font-weight="800" font-family="sans-serif">TP.HCM</text>
 </svg>

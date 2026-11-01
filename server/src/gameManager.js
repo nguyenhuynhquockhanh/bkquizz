@@ -40,6 +40,21 @@ export class GameManager {
     return this.rooms.get(pin);
   }
 
+  getActiveRooms() {
+    const list = [];
+    for (const room of this.rooms.values()) {
+      list.push({
+        pin: room.pin,
+        quizTitle: room.quiz?.title || "Chưa đặt tên",
+        status: room.status,
+        playerCount: room.players.size,
+        currentQuestion: room.currentQuestionIndex + 1,
+        totalQuestions: room.quiz?.questions?.length || 0
+      });
+    }
+    return list;
+  }
+
   addPlayer(pin, socketId, nickname, avatar) {
     const room = this.rooms.get(pin);
     if (!room) return { error: "Không tìm thấy phòng với mã PIN này!" };
@@ -239,7 +254,7 @@ export class GameManager {
     if (!player || player.powerUps.fiftyFifty <= 0) return;
 
     const currentQ = room.quiz.questions[room.currentQuestionIndex];
-    if (currentQ.type === "TRUE_FALSE") return; // Đúng/Sai có 2 đáp án, không dùng 50:50
+    if (currentQ.type === "TRUE_FALSE") return;
 
     player.powerUps.fiftyFifty -= 1;
 

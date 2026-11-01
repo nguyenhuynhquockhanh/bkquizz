@@ -5,11 +5,12 @@ import HostScreen from "./components/HostScreen";
 import PlayerScreen from "./components/PlayerScreen";
 import QuizEditor from "./components/QuizEditor";
 import MyQuizzes from "./components/MyQuizzes";
+import AdminDashboard from "./components/AdminDashboard";
 import LoginModal from "./components/LoginModal";
 import { socket } from "./services/socket";
 
 export default function App() {
-  const [currentView, setCurrentView] = useState("home"); // home, host, player, editor, my-quizzes
+  const [currentView, setCurrentView] = useState("home"); // home, host, player, editor, my-quizzes, admin
   const [roomData, setRoomData] = useState(null);
   const [playerData, setPlayerData] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => {
@@ -20,6 +21,11 @@ export default function App() {
   const [editingQuiz, setEditingQuiz] = useState(null);
 
   useEffect(() => {
+    // Kiểm tra nếu URL có path /admin
+    if (window.location.pathname === "/admin") {
+      setCurrentView("admin");
+    }
+
     socket.on("room_created", (data) => {
       setRoomData(data);
       setCurrentView("host");
@@ -81,7 +87,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#002855] text-white flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-[#f8f9fa] text-gray-900 flex flex-col font-sans select-none">
       {/* Navbar chỉ hiển thị ở màn hình thông thường (ẩn khi Host/Player toàn màn hình) */}
       {currentView !== "host" && currentView !== "player" && (
         <Navbar
@@ -110,6 +116,13 @@ export default function App() {
             onHostQuiz={handleHostGame}
             onEditQuiz={handleOpenEditQuiz}
             onCreateQuiz={handleOpenCreateQuiz}
+          />
+        )}
+
+        {/* Cổng Quản Trị Hệ Thống Admin */}
+        {currentView === "admin" && (
+          <AdminDashboard
+            onBack={() => setCurrentView(currentUser ? "my-quizzes" : "home")}
           />
         )}
 

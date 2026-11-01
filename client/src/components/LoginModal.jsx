@@ -19,6 +19,13 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     setPassword("password123");
   };
 
+  const handleClear = () => {
+    setName("");
+    setEmail("");
+    setPassword("");
+    setErrorMsg("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
@@ -49,129 +56,163 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-gray-900 relative border-b-8 border-gray-300">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="text-center mb-5">
-          <div className="flex justify-center mb-2">
-            <BKLogo className="w-12 h-12" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+      {/* Modal Cổng CAS Bách Khoa (sso.hcmut.edu.vn) */}
+      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full text-gray-900 relative overflow-hidden border border-gray-300">
+        {/* Banner Xanh Đậm Chuẩn CAS HCMUT */}
+        <div className="bg-[#002060] px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BKLogo className="w-8 h-8" />
+            <span className="text-white font-bold text-base sm:text-lg tracking-wide">
+              Central Authentication Service (CAS)
+            </span>
           </div>
-          <h2 className="text-2xl font-black text-gray-900">
-            {isRegister ? "Đăng ký Tài khoản BKQuiz" : "Đăng nhập Cổng BKQuiz"}
-          </h2>
-          <p className="text-gray-500 text-xs mt-1">
-            {isRegister
-              ? "Tạo tài khoản Giảng viên / Sinh viên để quản lý ngân hàng câu hỏi"
-              : "Đăng nhập để khởi tạo phòng thi và quản lý bộ đề của bạn"}
-          </p>
+
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white p-1 rounded-md transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Nút bấm điền nhanh tài khoản demo */}
-        {!isRegister && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs flex items-center justify-between">
-            <div>
-              <span className="font-black text-[#002855] block">Tài khoản dùng thử có sẵn:</span>
-              <span className="text-gray-600">demo@kahoot.com / password123</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleQuickFill}
-              className="py-1 px-3 rounded bg-[#0052cc] text-white font-bold hover:bg-[#00388b] text-xs"
-            >
-              Điền nhanh
-            </button>
-          </div>
-        )}
+        {/* Thân Modal 2 Cột */}
+        <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#fbfbfb]">
+          {/* Cột Trái: Form Đăng Nhập */}
+          <div>
+            <h3 className="text-sm font-bold text-[#b30000] mb-3">
+              {isRegister ? "Đăng ký tài khoản Giảng viên / Thí sinh" : "Enter your Username and Password"}
+            </h3>
 
-        {errorMsg && (
-          <div className="mb-4 p-2.5 rounded bg-red-100 border border-red-300 text-red-700 text-xs font-bold text-center">
-            {errorMsg}
-          </div>
-        )}
+            {/* Tài khoản dùng thử có sẵn */}
+            {!isRegister && (
+              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded text-[11px] flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-[#002855] block">Tài khoản demo:</span>
+                  <span className="text-gray-600">demo@kahoot.com / password123</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickFill}
+                  className="px-2 py-0.5 rounded bg-[#0275b8] text-white font-bold text-[10px]"
+                >
+                  Điền
+                </button>
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          {isRegister && (
-            <div>
-              <label className="block text-xs font-black uppercase text-gray-500 mb-1">
-                Họ và Tên của bạn
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
+            {errorMsg && (
+              <div className="mb-3 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs font-bold">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              {isRegister && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Họ và Tên:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nguyễn Văn A"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-900 focus:outline-none focus:border-[#0275b8]"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Email / Username:
+                </label>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  placeholder="Ví dụ: Nguyễn Văn A"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#0052cc]"
+                  placeholder="khanh.nguyenhuynh@hcmut.edu.vn"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-900 focus:outline-none focus:border-[#0275b8]"
                 />
               </div>
-            </div>
-          )}
 
-          <div>
-            <label className="block text-xs font-black uppercase text-gray-500 mb-1">
-              Email đăng nhập
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-              <input
-                type="email"
-                required
-                placeholder="email@hcmut.edu.vn"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#0052cc]"
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Password:
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-1.5 bg-white border border-gray-300 rounded text-xs text-gray-900 focus:outline-none focus:border-[#0275b8]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-1.5 bg-[#0275b8] hover:bg-[#02629b] text-white font-bold text-xs rounded transition-colors shadow-sm"
+                >
+                  {loading ? "Đang xử lý..." : isRegister ? "Register" : "Login"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold text-xs rounded transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="pt-2 text-left">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegister(!isRegister);
+                    setErrorMsg("");
+                  }}
+                  className="text-xs text-[#0275b8] hover:underline font-semibold"
+                >
+                  {isRegister
+                    ? "Đã có tài khoản? Chuyển sang Đăng nhập"
+                    : "Chưa có tài khoản? Bấm vào đây để Đăng ký"}
+                </button>
+              </div>
+            </form>
           </div>
 
-          <div>
-            <label className="block text-xs font-black uppercase text-gray-500 mb-1">
-              Mật khẩu
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3.5" />
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg font-bold text-sm text-gray-900 focus:outline-none focus:border-[#0052cc]"
-              />
+          {/* Cột Phải: Hướng Dẫn & Thông Báo CAS */}
+          <div className="space-y-3 text-xs text-gray-600 border-t md:border-t-0 md:border-l border-gray-200 md:pl-6 pt-4 md:pt-0">
+            <div>
+              <span className="font-bold text-[#b30000] block mb-1">Languages:</span>
+              <span className="text-[#0275b8] font-bold">Vietnamese</span> | <span className="text-[#0275b8] font-bold">English</span>
+            </div>
+
+            <div>
+              <span className="font-bold text-[#b30000] block mb-1">Please note:</span>
+              <p className="text-[11px] leading-relaxed text-gray-600">
+                The Login page enables single sign-on to multiple websites at HCMUT. This means that you only have to enter your user name and password once for websites that subscribe to the Login page.
+              </p>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200">
+              <span className="font-bold text-[#b30000] block mb-1">Technical support:</span>
+              <p className="text-[11px] text-gray-600">
+                E-mail: <span className="text-[#0275b8]">support@hcmut.edu.vn</span><br />
+                Tel: (84-8) 38647256 - 7204
+              </p>
             </div>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 mt-2 rounded-lg font-black text-sm uppercase tracking-wider btn-bk-primary flex items-center justify-center gap-2"
-          >
-            {isRegister ? <UserPlus className="w-4 h-4 stroke-[3]" /> : <LogIn className="w-4 h-4 stroke-[3]" />}
-            {loading ? "Đang xử lý..." : isRegister ? "Đăng ký tài khoản" : "Đăng nhập ngay"}
-          </button>
-        </form>
-
-        <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setErrorMsg("");
-            }}
-            className="text-xs font-bold text-[#0052cc] hover:underline"
-          >
-            {isRegister
-              ? "Đã có tài khoản? Bấm vào đây để Đăng nhập"
-              : "Chưa có tài khoản? Bấm vào đây để Đăng ký"}
-          </button>
+        {/* Footer CAS Chuẩn */}
+        <div className="px-6 py-2.5 bg-gray-100 border-t border-gray-200 text-center text-[10px] text-gray-500">
+          Copyright © 2011 - 2026 Ho Chi Minh University of Technology. All rights reserved. • Powered by Jasig CAS / BKQuiz
         </div>
       </div>
     </div>
