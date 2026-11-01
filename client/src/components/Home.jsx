@@ -52,20 +52,20 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
       style={{ backgroundImage: "url('/hcmut-campus-background.png')" }}
     >
       {/* KHỐI TRUNG TÂM CHUẨN MYBK (mybk.hcmut.edu.vn) */}
-      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center rounded-2xl bg-white/90 p-4 sm:p-6 shadow-xl border border-white/70 backdrop-blur-sm">
+      <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center rounded-2xl bg-white/35 p-4 sm:p-6 shadow-xl border border-white/50 backdrop-blur-md">
         {/* Logo 3D Khối Lập Phương Bách Khoa TP.HCM */}
         <div className="mb-6 flex flex-col items-center text-center">
           <BKLogo className="w-24 h-24 mb-3 drop-shadow-sm" />
           <h1 className="text-2xl sm:text-3xl font-black text-[#002855] tracking-tight">
             BK<span className="text-[#0275b8]">Quiz</span> • HCMUT
           </h1>
-          <p className="text-xs text-gray-500 font-semibold mt-1">
+          <p className="text-xs text-[#002855] font-semibold mt-1">
             Hệ thống Trắc nghiệm Tương tác Trực tuyến ĐH Bách Khoa TP.HCM
           </p>
         </div>
 
         {/* 2 Khối Lựa Chọn Vàng Chuẩn Giao Diện MyBK nếu chưa nhập PIN */}
-        <div className="w-full bg-[#f8f9fa] rounded-2xl p-6 sm:p-8 border border-gray-200 shadow-sm">
+        <div className="w-full bg-white/25 rounded-2xl p-6 sm:p-8 border border-white/40 shadow-sm">
           {errorMsg && (
             <div className="mb-4 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-bold text-center">
               {errorMsg}
@@ -189,7 +189,7 @@ export default function Home({ onJoinGame, onOpenMyQuizzes, onOpenLogin, current
           </div>
         ) : (
           <div className="mt-4 text-center">
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-[#002855] font-medium">
               Đăng ký tài khoản BKQuiz bằng tên đăng nhập hoặc email của bạn.
             </span>
           </div>
