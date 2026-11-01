@@ -45,16 +45,31 @@ npm run dev -- --host
 
 ---
 
-## 🌐 Hướng Dẫn Deploy Lên Cloud (Miễn Phí)
+## Deploy một lần lên Azure App Service
 
-1. **Deploy Backend (Node.js Socket.IO)**:
-   - Đẩy thư mục `server/` lên GitHub.
-   - Kết nối với **Render.com** (chọn *Web Service*, Build Command: `npm install`, Start Command: `npm start`).
-   - Sao chép URL server sau khi deploy (ví dụ: `https://my-kahoot-backend.onrender.com`).
+Frontend React và backend Express/Socket.IO chạy trên cùng một App Service và tên miền.
 
-2. **Deploy Frontend (React Vite)**:
-   - Trong `client/`, tạo file `.env.production`:
-     ```env
-     VITE_BACKEND_URL=https://my-kahoot-backend.onrender.com
-     ```
-   - Đẩy thư mục `client/` lên GitHub và kết nối với **Vercel** hoặc **Netlify** để tự động build và cấp domain miễn phí.
+### Kiểm tra trên máy cá nhân (Node 24 LTS)
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+Mở http://localhost:4000. Không cần đặt `VITE_BACKEND_URL` khi chạy chung.
+Lệnh build cài cả công cụ build frontend, kể cả khi NODE_ENV=production.
+Khi phát triển với hai terminal, vẫn có thể chạy `npm run dev` trong server và client;
+Vite proxy chuyển /api và /socket.io về backend cổng 4000.
+
+### Cấu hình Azure
+
+1. Tạo Web App: Publish **Code**, Runtime **Node 24 LTS**, OS **Linux**.
+2. Deployment Center: kết nối repo và nhánh chứa bản sửa. Triển khai từ **thư mục gốc**, không chọn client hoặc server riêng.
+3. Environment variables / App settings: đặt `NODE_ENV=production`.
+4. Startup Command: `npm start`.
+5. Quy trình build phải chạy `npm install` rồi `npm run build` ở gốc repo. Nếu dùng ZIP/source deployment với Azure build (Oryx), đặt `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. Nếu dùng GitHub Actions do Azure tạo, kiểm tra bước build chạy tại gốc và gói triển khai bao gồm `client/dist`, `server` (cả dependencies), cùng package.json ở gốc.
+6. Xóa VITE_BACKEND_URL cũ nếu nó trỏ đến localhost hoặc backend khác, rồi build lại.
+7. Mở link HTTPS Azure, tạo phòng Host; dùng điện thoại quét QR để thử tham gia và chơi. API, tải Excel và Socket.IO đều dùng chung tên miền.
+
+Không cần tự đặt PORT: server đọc cổng do Azure cấp. Chỉ chạy **một instance** vì phòng chơi đang lưu trong RAM; restart/deploy làm mất phòng đang chơi. Dữ liệu tài khoản và bộ đề hiện lưu bằng JSON trong thư mục ứng dụng, chưa phải database bền vững và có thể bị ghi đè khi deploy; cần database trước khi dùng để lưu dữ liệu lâu dài. Không dùng Run From Package chỉ đọc với cơ chế ghi JSON hiện tại.

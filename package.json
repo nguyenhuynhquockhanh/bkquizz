@@ -1,0 +1,13 @@
+{
+  "name": "classplay",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0 <25"
+  },
+  "scripts": {
+    "postinstall": "npm ci --prefix server --omit=dev",
+    "build": "npm ci --prefix client --include=dev && npm run build --prefix client",
+    "start": "npm start --prefix server"
+  }
+}

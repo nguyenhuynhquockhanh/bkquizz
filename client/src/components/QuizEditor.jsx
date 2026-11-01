@@ -29,7 +29,7 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
   const [activeQIndex, setActiveQIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "";
 
   const handleAddQuestion = (type = "MULTIPLE_CHOICE") => {
     let options = [];
@@ -410,3 +410,4 @@ export default function QuizEditor({ onBack, onSaved, editQuizData, currentUser 
     </div>
   );
 }
+
