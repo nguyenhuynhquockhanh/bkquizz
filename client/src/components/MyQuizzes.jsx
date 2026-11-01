@@ -2,7 +2,7 @@ import { apiFetch as fetch, downloadReport } from "../services/api";
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Edit, Trash2, Play, Download, BookOpen, HelpCircle, Monitor } from "lucide-react";
 
-export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz, onImportPdf }) {
+export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz }) {
   const [quizzes, setQuizzes] = useState([]);
   const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("quizzes");
@@ -68,7 +68,6 @@ export default function MyQuizzes({ user, onHostQuiz, onEditQuiz, onCreateQuiz, 
             </p>
           </div>
 
-          <button onClick={onImportPdf} className="px-5 py-3 rounded-lg bg-[#0275b8] text-white font-bold">Nhập từ PDF</button>
           <button
             onClick={onCreateQuiz}
             className="px-6 py-3 rounded-lg font-black text-sm uppercase tracking-wider btn-kahoot-green flex items-center gap-2 shadow"

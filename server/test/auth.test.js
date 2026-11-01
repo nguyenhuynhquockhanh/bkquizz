@@ -79,20 +79,6 @@ test('authentication and role boundaries', { timeout: 30000 }, async (t) => {
       assert.deepEqual((await request(`/api/quizzes?userId=${user.id}`, 'GET', undefined, other.token)).body, []);
       assert.equal((await request(`/api/quizzes/${quizId}`, 'PUT', { title: 'Moderated' }, admin.token)).status, 200);
     });
-    await t.test('PDF import validates answers, persists and keeps ownership', async () => {
-      const question = { type: 'MULTIPLE_CHOICE', question: 'Pick two', timeLimit: 30, points: 1000,
-        options: ['One','Two','Three','Four'].map((text,id)=>({id,text,isCorrect:id===1})) };
-      const draft = { title: 'Imported quiz', userId: admin.id, questions: [question] };
-      assert.equal((await request('/api/quizzes/import','POST',draft)).status,401);
-      assert.equal((await request('/api/quizzes/import','POST',{...draft,questions:[]},user.token)).status,400);
-      const saved = await request('/api/quizzes/import','POST',draft,user.token);
-      assert.equal(saved.status,201);
-      assert.equal(saved.body.userId,user.id);
-      assert.equal((await request(`/api/quizzes/${saved.body.id}`,'GET',undefined,other.token)).status,403);
-      assert.equal((await request(`/api/quizzes/${saved.body.id}`,'GET',undefined,user.token)).body.questions[0].options[1].isCorrect,true);
-      const stored=JSON.parse(await readFile(path.join(dataDir,'quizzes.json'),'utf8'));
-      assert.ok(stored.some(q=>q.id===saved.body.id));
-    });
     await t.test('admin can create and change roles; sessions use the current server role', async () => {
       const created = await request('/api/admin/users', 'POST', { name: 'Second admin', email: 'admin2', password: 'test1234', role: 'admin' }, admin.token);
       assert.equal(created.status, 201);
